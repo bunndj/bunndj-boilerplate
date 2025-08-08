@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "dev:laravel": "concurrently \"npm run dev\" \"php artisan serve\"",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"resources/js/**/*.{ts,tsx,js,jsx}\" \"*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"resources/js/**/*.{ts,tsx,js,jsx}\" \"*.{js,ts,json,md}\"",
+    "format:all": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "axios": "^1.11.0",
+    "concurrently": "^9.0.1",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "laravel-vite-plugin": "^2.0.0",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.8.2",
+    "vite": "^7.0.4"
+  },
+  "name": "bunn-dj-planner",
+  "version": "1.0.0",
+  "description": "Bunn DJ Wedding Planning App",
+  "main": "vite.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "bunn-dj-planner": "file:",
+    "laravel-react-typescript-project": "file:",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.8.0"
+  }
+}
