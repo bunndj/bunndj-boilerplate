@@ -1,11 +1,13 @@
 # **DJ Wedding Planning App - Updated Project Scope v3**
 
 ## **Core Concept**
+
 A focused planning application to replace Bunn DJ Company's current portal. **Not a CRM** - specifically designed for wedding event planning with PDF processing, email integration, and mobile-optimized DJ dashboard for event management.
 
 ## **Phase 1: MVP (Current Focus)**
 
 ### **Core Features:**
+
 1. **PDF Processing System**
    - Upload wedding planner PDFs
    - AI extraction of planning data
@@ -31,6 +33,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
    - Status tracking
 
 ### **Music Integration (Phase 1)**
+
 - **Spotify playlist input**
 - **Basic music timeline organization**
 - **Integration planning for Crate Hackers API**
@@ -38,12 +41,14 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **Phase 2: Client Interaction (Future)**
 
 ### **AI-Driven Client Questionnaire**
+
 - **Decision tree flow** for clients without wedding planners
 - **Conversational interface** to gather planning details
 - **Smart questioning** based on previous responses
 - **Data integration** with existing planning forms
 
 ### **Enhanced Client Features**
+
 - **Client portal access** (invitation-based)
 - **Progress tracking** for clients
 - **Direct communication** with DJs
@@ -51,17 +56,20 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **Updated Technical Priorities:**
 
 ### **1. Mobile-First Design**
+
 - **iPad-optimized interface** for DJ use during events
 - **Touch-friendly controls** for timeline editing
 - **Offline capability** for event day use
 - **Fast loading** and responsive design
 
 ### **2. API Integrations**
+
 - **Crate Hackers API** for Spotify playlist conversion
 - **Sorado integration** for DJ software compatibility
 - **OpenAI API** for PDF and email parsing
 
 ### **3. User Experience Focus**
+
 - **Simplified workflow** - avoid CRM complexity
 - **Event-centric design** - everything revolves around individual events
 - **Quick editing** - easy changes during live events
@@ -70,6 +78,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **Updated User Flows:**
 
 ### **DJ Workflow (Phase 1)**
+
 1. **Create event** → Upload client PDFs → AI processes data
 2. **Review parsed information** → Edit/verify details
 3. **Add client emails** → System extracts relevant info
@@ -77,6 +86,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 5. **Event day** → Use iPad interface for real-time management
 
 ### **Admin Workflow**
+
 1. **Manage DJ accounts**
 2. **Monitor system usage**
 3. **Support and maintenance**
@@ -84,6 +94,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **Key Deliverables:**
 
 ### **Phase 1 MVP:**
+
 - ✅ PDF upload and AI processing
 - ✅ Email forwarding and parsing
 - ✅ iPad-optimized DJ dashboard
@@ -92,12 +103,14 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 - ✅ Admin user management
 
 ### **Phase 2 (Future):**
+
 - ⏳ Client questionnaire system
 - ⏳ Advanced music platform integration
 - ⏳ Enhanced client portal
 - ⏳ Advanced reporting features
 
 ## **Scope Boundaries (What We're NOT Building):**
+
 - ❌ **CRM functionality** (client relationship management)
 - ❌ **Booking/payment systems**
 - ❌ **Inventory management**
@@ -108,6 +121,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **Database Structure (Updated for Phase 1 Focus)**
 
 ### **Users Table (DJs + Admin)**
+
 ```
 - id
 - name
@@ -125,6 +139,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ```
 
 ### **Events Table**
+
 ```
 - id
 - name (nullable)
@@ -141,6 +156,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ```
 
 ### **Event_Documents Table**
+
 ```
 - id
 - event_id (foreign key)
@@ -155,6 +171,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ```
 
 ### **Event_Planning_Data Table**
+
 ```
 - id
 - event_id (foreign key)
@@ -166,6 +183,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ```
 
 ### **Event_Music Table**
+
 ```
 - id
 - event_id (foreign key)
@@ -180,16 +198,19 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **User Interface Flow (iPad-Optimized)**
 
 ### **Authentication Pages**
+
 - `/signin` - Universal login
 - `/admin/signup` - Admin registration (restricted)
 
 ### **Admin Pages**
+
 - `/admin/dashboard` - Admin overview
 - `/admin/djs` - Manage DJ accounts
 - `/admin/events` - View all events
 - `/admin/reports` - System reports
 
 ### **DJ Pages (Mobile-Optimized)**
+
 - `/dashboard` - Events overview (tablet-friendly)
 - `/events/create` - Create new event
 - `/events/[id]` - Event details & planning
@@ -202,6 +223,7 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 ## **Development Phases**
 
 ### **Phase 1: Core MVP (Current)**
+
 1. **Week 1-2**: Complete database & models ✅
 2. **Week 3-4**: PDF upload & AI processing system
 3. **Week 5-6**: iPad-optimized DJ dashboard
@@ -210,12 +232,14 @@ A focused planning application to replace Bunn DJ Company's current portal. **No
 6. **Week 11-12**: Testing & refinement
 
 ### **Phase 2: Client Interaction (Future)**
+
 - AI questionnaire system
 - Client portal development
 - Advanced music integrations
 - Enhanced mobile features
 
 ## **Success Metrics for Phase 1:**
+
 - ✅ **PDF Processing**: 90%+ accuracy in data extraction
 - ✅ **Mobile Performance**: <3 second load times on iPad
 - ✅ **User Adoption**: Easy migration from current portal
