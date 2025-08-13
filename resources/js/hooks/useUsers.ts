@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersService } from '@/services';
+import { authStorage } from '@/utils/storage';
 import { QUERY_KEYS } from '@/types/common';
 import type { User } from '@/types/auth';
 
@@ -33,7 +34,7 @@ export const useUpdateProfile = () => {
       queryClient.setQueryData(QUERY_KEYS.auth.user, data.data);
 
       // Update stored user data
-      localStorage.setItem('auth_user', JSON.stringify(data.data));
+      authStorage.setUser(data.data);
     },
   });
 };

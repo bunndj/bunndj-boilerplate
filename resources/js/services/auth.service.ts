@@ -4,31 +4,31 @@ import type { AuthResponse, LoginCredentials, RegisterCredentials, User } from '
 export const authService = {
   // Register new user
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post('/api/register', credentials);
+    const response = await apiClient.post('/register', credentials);
     return response.data;
   },
 
   // Login user
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post('/api/login', credentials);
+    const response = await apiClient.post('/login', credentials);
     return response.data;
   },
 
   // Logout user
   logout: async (): Promise<{ message: string }> => {
-    const response = await apiClient.post('/api/logout');
+    const response = await apiClient.post('/logout');
     return response.data;
   },
 
   // Get current user
   getCurrentUser: async (): Promise<{ user: User }> => {
-    const response = await apiClient.get('/api/user');
+    const response = await apiClient.get('/user');
     return response.data;
   },
 
   // Refresh token
   refreshToken: async (): Promise<AuthResponse> => {
-    const response = await apiClient.post('/api/refresh');
+    const response = await apiClient.post('/refresh');
     return response.data;
   },
 };
