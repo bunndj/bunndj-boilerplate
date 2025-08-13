@@ -28,7 +28,7 @@ class AdminUserSeeder extends Seeder
 
         // Create or update Joe Bunn admin user
         User::updateOrCreate(
-            ['email' => 'djjoebunn@me.com'],
+            ['email' => 'joe@bunndjcompany.com'],
             [
                 'name' => 'Joe Bunn',
                 'password' => Hash::make('12345678'),

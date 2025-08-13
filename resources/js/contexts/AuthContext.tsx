@@ -1,6 +1,7 @@
 import React, { createContext, ReactNode, useState, useEffect } from 'react';
 import { authService } from '@/services';
 import { setAuthToken } from '@/services/api-client';
+import { authStorage } from '@/utils/storage';
 import type { AuthContextType, User } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,18 +17,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const clearAuth = () => {
     setUser(null);
     setAuthToken(null);
-    localStorage.removeItem('auth_user');
+    authStorage.clearAuth();
   };
 
   const saveAuth = (userData: User, token: string) => {
     setUser(userData);
     setAuthToken(token);
-    localStorage.setItem('auth_user', JSON.stringify(userData));
+    authStorage.setUser(userData);
   };
 
   const updateUser = (userData: User) => {
     setUser(userData);
-    localStorage.setItem('auth_user', JSON.stringify(userData));
+    authStorage.setUser(userData);
   };
 
   // Check for existing auth on mount
@@ -36,8 +37,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         setIsLoading(true);
 
-        const storedUser = localStorage.getItem('auth_user');
-        const storedToken = localStorage.getItem('auth_token');
+        const storedUser = authStorage.getUser();
+        const storedToken = authStorage.getToken();
 
         if (storedUser && storedToken) {
           // Set the token first
@@ -48,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           // If successful, use fresh user data from backend
           setUser(response.user);
-          localStorage.setItem('auth_user', JSON.stringify(response.user));
+          authStorage.setUser(response.user);
         } else {
           clearAuth();
         }
@@ -111,7 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
-    token: localStorage.getItem('auth_token'),
+    token: authStorage.getToken(),
     isLoading,
     isAuthenticated: !!user,
     login,
