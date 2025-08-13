@@ -31,19 +31,28 @@ function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: 'url(/assets/background.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="bg-secondary/80 backdrop-blur-sm rounded-xl shadow-lg max-w-md w-full mx-4">
         <div className="p-8">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="bg-purple-100 p-3 rounded-full">
-                <svg className="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
-                </svg>
-              </div>
+              <img
+                src="/assets/logo.png"
+                alt="Bunn DJ Planning Logo"
+                className="h-12 w-auto object-contain"
+                style={{ aspectRatio: '160/51' }}
+              />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back, DJ!</h1>
-            <p className="text-gray-600">Sign in to manage your wedding events</p>
+            <h1 className="text-3xl font-bold text-brand mb-2">Welcome Back, DJ!</h1>
+            <p className="text-white">Sign in to manage your wedding events</p>
           </div>
 
           {errors.root && (
@@ -54,14 +63,14 @@ function SignIn() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-brand mb-2">
                 Email Address
               </label>
               <input
                 type="email"
                 id="email"
                 {...register('email')}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="your.email@example.com"
@@ -71,10 +80,10 @@ function SignIn() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-brand">
                   Password
                 </label>
-                <a href="#" className="text-sm text-purple-600 hover:text-purple-700">
+                <a href="#" className="text-sm text-brand hover:text-brand-dark">
                   Forgot password?
                 </a>
               </div>
@@ -82,7 +91,7 @@ function SignIn() {
                 type="password"
                 id="password"
                 {...register('password')}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
                   errors.password ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Enter your password"
@@ -95,7 +104,7 @@ function SignIn() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+              className="w-full bg-brand hover:bg-brand-dark disabled:bg-gray-400 text-secondary font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
@@ -128,12 +137,10 @@ function SignIn() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              New to DJ Planning Hub?{' '}
-              <Link to="/signup" className="text-purple-600 hover:text-purple-700 font-medium">
-                Create your DJ account
-              </Link>
-            </p>
+            <p className="text-white text-sm mb-1">New to DJ Planning Hub?</p>
+            <Link to="/signup" className="text-brand hover:text-brand-dark font-medium">
+              Create your DJ account
+            </Link>
           </div>
         </div>
       </div>

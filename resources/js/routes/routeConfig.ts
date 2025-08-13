@@ -2,12 +2,14 @@ import React from 'react';
 import SignIn from '../pages/SignIn';
 import SignUp from '../pages/SignUp';
 import Dashboard from '../pages/Dashboard';
+import { Layout } from '../components/layouts';
 
 export interface RouteConfig {
   path: string;
   element: React.ComponentType;
   isProtected?: boolean;
   isPublic?: boolean;
+  layout?: React.ComponentType<{ children: React.ReactNode }>;
 }
 
 export const routes: RouteConfig[] = [
@@ -28,6 +30,7 @@ export const routes: RouteConfig[] = [
     path: '/dashboard',
     element: Dashboard,
     isProtected: true,
+    layout: Layout,
   },
 ];
 
