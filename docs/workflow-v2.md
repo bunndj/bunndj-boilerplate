@@ -1,15 +1,18 @@
 # **DJ Wedding Planning App - Complete Project Scope & Database Design**
 
 ## **Core Concept**
+
 A wedding planning application where **DJs are the only users** who manage multiple wedding events. DJs manually input event information, upload client documents, and use AI to parse planning data from various sources. The platform includes admin users who manage DJ accounts and events.
 
 ## **User Types**
+
 - **Admin Users**: Manage the platform, create DJ accounts, oversee all events
 - **DJ Users**: Manage assigned events, upload documents, use AI parsing
 
 ## **1. User Authentication & Roles**
 
 ### **Registration & Onboarding**
+
 - **Admin Registration**: Restricted admin account creation
 - **DJ Registration**: Admin creates DJ accounts
 - **Universal Login**: Single login form for all users
@@ -18,7 +21,9 @@ A wedding planning application where **DJs are the only users** who manage multi
 ### **User Roles & Permissions**
 
 #### **Admin Users**
+
 **Privileges:**
+
 - ✅ Create, edit, delete DJ accounts
 - ✅ View all events and data
 - ✅ Delete events
@@ -27,7 +32,9 @@ A wedding planning application where **DJs are the only users** who manage multi
 - ✅ Generate reports
 
 #### **DJ Users**
+
 **Privileges:**
+
 - ✅ Create, edit, delete their own events
 - ✅ Upload documents for their events
 - ✅ Manage planning data for their events
@@ -37,17 +44,20 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **2. Core Features**
 
 ### **Event Management**
+
 - **Event Creation**: DJs create their own events with basic details
 - **Event Details**: Complete event information including venue
 - **Status Tracking**: Planning, confirmed, completed statuses
 
 ### **Document Upload & Processing**
+
 - **PDF Upload**: Wedding planner documents, client notes
 - **Email Integration**: Forward client emails to events
 - **Note Taking**: Manual notes from meetings/calls
 - **AI Parsing**: Extract relevant planning data from documents
 
 ### **Planning Forms & Data Management**
+
 - **AI-Powered Form Filling**: Automatically populate from uploaded documents
 - **Manual Review Interface**: Verify and edit parsed results
 - **Manual Input**: Add missing information manually
@@ -55,12 +65,14 @@ A wedding planning application where **DJs are the only users** who manage multi
 - **Data Export**: Generate final planning documents
 
 ### **Music Management**
+
 - **Spotify Integration**: Client playlist links
 - **Music Timeline**: Organize songs by event phase
 - **DJ Music Catalog**: Professional music database
 - **Client Preferences**: Track do-not-play lists, special requests
 
 ### **Timeline Management**
+
 - **Visual Timeline**: Event schedule creation
 - **Task Management**: DJ-specific tasks and reminders
 - **Final Documentation**: Export complete event plans
@@ -68,6 +80,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **3. Database Structure**
 
 ### **Users Table (DJs + Admin)**
+
 ```
 - id
 - name (e.g., "Joe Bond")
@@ -93,6 +106,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 ```
 
 ### **Events Table**
+
 ```
 - id (e.g., "6640")
 - name (nullable)
@@ -120,6 +134,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 ```
 
 ### **Event_Documents Table**
+
 ```
 - id
 - event_id
@@ -133,6 +148,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 ```
 
 ### **Event_Planning_Data Table**
+
 ```
 - id
 - event_id
@@ -145,6 +161,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 ```
 
 ### **Event_Music Table**
+
 ```
 - id
 - event_id
@@ -160,17 +177,20 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **4. User Interface Flow**
 
 ### **Authentication Pages**
+
 - `/signup` - Admin registration (restricted)
 - `/signin` - Universal login
 - `/onboarding` - Profile setup
 
 ### **Admin Pages**
+
 - `/admin/dashboard` - Admin overview
 - `/admin/djs` - Manage DJ accounts
 - `/admin/events` - Manage all events
 - `/admin/reports` - System reports
 
 ### **DJ Pages**
+
 - `/dashboard` - Assigned events overview
 - `/events/[id]` - Event details & planning
 - `/events/[id]/documents` - Document upload & management
@@ -182,18 +202,21 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **5. Key Features Breakdown**
 
 ### **AI Document Processing**
+
 - **PDF Parsing**: Extract planning data from various document formats
 - **Email Processing**: Parse client emails for relevant information
 - **Data Mapping**: Match extracted data to planning form fields
 - **Confidence Scoring**: Indicate parsing accuracy for manual review
 
 ### **Admin Management Interface**
+
 - **DJ Management**: Create, edit, deactivate DJ accounts
 - **Event Management**: View all events, delete events if needed
 - **System Overview**: View all events, progress, and statistics
 - **Reporting**: Generate reports on event completion, DJ performance
 
 ### **DJ Management Interface**
+
 - **Event Overview**: All their own events with status and progress
 - **Event Creation**: Create new events with basic details
 - **Document Management**: Upload, review, and organize client materials
@@ -204,31 +227,37 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **6. Development Phases**
 
 ### **Phase 1: Core Platform**
+
 - User authentication and role management
 - Admin and DJ dashboards
 - Basic user management (admin creates DJ accounts)
 
 ### **Phase 2: Event Management**
+
 - Event creation by DJs
 - Basic event details and venue information
 - Event status tracking
 
 ### **Phase 3: Document Management**
+
 - File upload system
 - Document organization and storage
 - Basic document viewing
 
 ### **Phase 4: AI Integration**
+
 - PDF parsing with AI
 - Data extraction and mapping
 - Manual review interface
 
 ### **Phase 5: Planning Forms**
+
 - Planning form management
 - Manual data input
 - Progress tracking
 
 ### **Phase 6: Music & Timeline**
+
 - Music management system
 - Timeline creation tools
 - Final documentation export
@@ -236,6 +265,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **7. Technical Requirements**
 
 ### **Backend (Laravel)**
+
 - User authentication and role-based authorization
 - File upload and storage
 - AI API integration (OpenAI)
@@ -244,6 +274,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 - Admin management system
 
 ### **Frontend (React)**
+
 - Admin dashboard and management interface
 - DJ dashboard and event management
 - Document upload and review
@@ -251,6 +282,7 @@ A wedding planning application where **DJs are the only users** who manage multi
 - Timeline creation tools
 
 ### **External Integrations**
+
 - **OpenAI API**: Document parsing and data extraction
 - **Email Service**: Process forwarded client emails
 - **File Storage**: Secure document storage
@@ -259,12 +291,14 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **8. Key Benefits**
 
 ### **For Admins**
+
 - **Centralized Management**: Control over all DJs
 - **System Oversight**: Complete visibility into all operations
 - **Event Monitoring**: View and manage all events
 - **Reporting**: Comprehensive system analytics
 
 ### **For DJs**
+
 - **Focused Work**: Only see assigned events
 - **AI-Powered Efficiency**: Automatic data extraction from documents
 - **Professional Documentation**: Clean, organized event plans
@@ -273,12 +307,14 @@ A wedding planning application where **DJs are the only users** who manage multi
 ## **9. User Workflows**
 
 ### **Admin Workflow**
+
 1. Create DJ accounts
 2. Monitor all events and DJs
 3. Delete events if needed
 4. Generate reports and analytics
 
 ### **DJ Workflow**
+
 1. Create their own events
 2. Upload client documents and notes
 3. Review AI-parsed data
