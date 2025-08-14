@@ -35,27 +35,27 @@ A modern full-stack web application combining Laravel backend with an embedded R
 
 1. **Install PHP dependencies**:
 
-    ```bash
-    composer install
-    ```
+   ```bash
+   composer install
+   ```
 
 2. **Install Node.js dependencies**:
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
 3. **Environment setup**:
 
-    ```bash
-    cp .env.example .env
-    php artisan key:generate
-    ```
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
 4. **Database setup**:
-    ```bash
-    php artisan migrate
-    ```
+   ```bash
+   php artisan migrate
+   ```
 
 ## 🎯 Available Scripts
 
@@ -63,54 +63,54 @@ A modern full-stack web application combining Laravel backend with an embedded R
 
 - **Start development servers** (recommended):
 
-    ```bash
-    npm run dev:laravel
-    ```
+  ```bash
+  npm run dev:laravel
+  ```
 
-    This starts both Vite dev server and Laravel server concurrently.
+  This starts both Vite dev server and Laravel server concurrently.
 
 - **Start frontend only**:
 
-    ```bash
-    npm run dev
-    ```
+  ```bash
+  npm run dev
+  ```
 
 - **Start Laravel server only**:
-    ```bash
-    php artisan serve
-    ```
+  ```bash
+  php artisan serve
+  ```
 
 ### Code Quality
 
 - **Run ESLint**:
 
-    ```bash
-    npm run lint
-    ```
+  ```bash
+  npm run lint
+  ```
 
 - **Fix ESLint issues**:
 
-    ```bash
-    npm run lint:fix
-    ```
+  ```bash
+  npm run lint:fix
+  ```
 
 - **TypeScript type checking**:
-    ```bash
-    npm run type-check
-    ```
+  ```bash
+  npm run type-check
+  ```
 
 ### Production
 
 - **Build for production**:
 
-    ```bash
-    npm run build
-    ```
+  ```bash
+  npm run build
+  ```
 
 - **Preview production build**:
-    ```bash
-    npm run preview
-    ```
+  ```bash
+  npm run preview
+  ```
 
 ## 🌐 Project Structure
 
@@ -149,16 +149,16 @@ These endpoints are used by the React frontend to demonstrate backend communicat
 
 1. **Build the frontend**:
 
-    ```bash
-    npm run build
-    ```
+   ```bash
+   npm run build
+   ```
 
 2. **Optimize Laravel**:
-    ```bash
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
-    ```
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
 
 ### Cloud Deployment
 

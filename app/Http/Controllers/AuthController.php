@@ -15,13 +15,20 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'username' => 'required|string|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
+            'organization' => 'required|string|max:255',
+            'phone' => 'required|string|max:255',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'username' => $request->username,
             'password' => Hash::make($request->password),
+            'organization' => $request->organization,
+            'home_phone' => $request->phone, // Map phone to home_phone
+            'role' => 'dj', // All new registrations are DJs
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
