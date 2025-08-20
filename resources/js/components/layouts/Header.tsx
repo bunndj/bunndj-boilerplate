@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
   title?: string;
@@ -9,6 +9,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +55,7 @@ const Header: React.FC<HeaderProps> = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Title */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-3">
               <img
                 src="/assets/logo.png"
@@ -63,6 +64,32 @@ const Header: React.FC<HeaderProps> = () => {
                 style={{ aspectRatio: '160/51' }}
               />
             </div>
+
+            {/* Navigation */}
+            {user && (
+              <nav className="flex space-x-6">
+                <Link
+                  to="/dashboard"
+                  className={`text-sm font-medium transition-colors ${
+                    location.pathname === '/dashboard'
+                      ? 'text-brand'
+                      : 'text-gray-300 hover:text-brand'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/events"
+                  className={`text-sm font-medium transition-colors ${
+                    location.pathname === '/events'
+                      ? 'text-brand'
+                      : 'text-gray-300 hover:text-brand'
+                  }`}
+                >
+                  Events
+                </Link>
+              </nav>
+            )}
           </div>
 
           {/* User Menu */}

@@ -16,16 +16,15 @@ class Event extends Model
      */
     protected $fillable = [
         'name',
-        'event_type',
         'event_date',
         'setup_time',
         'start_time',
         'end_time',
-        'booking_status',
         'service_package',
         'service_description',
         'guest_count',
         'dj_id',
+        // Venue fields
         'venue_name',
         'venue_address',
         'venue_city',
@@ -33,6 +32,30 @@ class Event extends Model
         'venue_zipcode',
         'venue_phone',
         'venue_email',
+        // Client information fields
+        'client_firstname',
+        'client_lastname',
+        'client_organization',
+        'client_cell_phone',
+        'client_home_phone',
+        'client_email',
+        'client_address',
+        'client_address_line2',
+        'client_city',
+        'client_state',
+        'client_zipcode',
+        // Custom client fields
+        'partner_name',
+        'partner_email',
+        'mob_fog',
+        'mob_fog_email',
+        'other_contact',
+        'poc_email_phone',
+        'vibo_link',
+        // Financial fields
+        'package',
+        'add_ons',
+        'deposit_value',
     ];
 
     /**
@@ -47,6 +70,8 @@ class Event extends Model
             'setup_time' => 'datetime',
             'start_time' => 'datetime',
             'end_time' => 'datetime',
+            'add_ons' => 'array',
+            'deposit_value' => 'decimal:2',
         ];
     }
 

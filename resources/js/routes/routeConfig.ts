@@ -1,8 +1,9 @@
 import React from 'react';
-import SignIn from '../pages/SignIn';
-import SignUp from '../pages/SignUp';
-import Dashboard from '../pages/Dashboard';
-import { Layout } from '../components/layouts';
+import SignIn from '@/pages/SignIn';
+import SignUp from '@/pages/SignUp';
+import Dashboard from '@/pages/Dashboard';
+import Events from '@/pages/Events';
+import { Layout } from '@/components/layouts';
 
 export interface RouteConfig {
   path: string;
@@ -29,6 +30,12 @@ export const routes: RouteConfig[] = [
   {
     path: '/dashboard',
     element: Dashboard,
+    isProtected: true,
+    layout: Layout,
+  },
+  {
+    path: '/events',
+    element: Events,
     isProtected: true,
     layout: Layout,
   },

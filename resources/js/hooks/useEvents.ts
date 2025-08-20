@@ -1,13 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { eventsService } from '@/services';
-import { QUERY_KEYS } from '@/types/common';
-import type { UpdateEventData, EventPlanning, EventMusicIdeas } from '@/types/events';
+import { eventService } from '@/services/event-service';
+import type { CreateEventData } from '@/types/event';
+
+// Query keys for caching
+const QUERY_KEYS = {
+  events: {
+    all: ['events'] as const,
+    list: (params?: any) => [...QUERY_KEYS.events.all, 'list', params] as const,
+    detail: (id: number) => [...QUERY_KEYS.events.all, 'detail', id] as const,
+  },
+};
 
 // Hook for getting all events
-export const useEvents = (params?: any) => {
+export const useEvents = () => {
   return useQuery({
-    queryKey: QUERY_KEYS.events.list(params),
-    queryFn: () => eventsService.getEvents(params),
+    queryKey: QUERY_KEYS.events.all,
+    queryFn: () => eventService.getEvents(),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 };
@@ -16,7 +24,7 @@ export const useEvents = (params?: any) => {
 export const useEvent = (id: number) => {
   return useQuery({
     queryKey: QUERY_KEYS.events.detail(id),
-    queryFn: () => eventsService.getEvent(id),
+    queryFn: () => eventService.getEvent(id),
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!id,
   });
@@ -27,7 +35,7 @@ export const useCreateEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: eventsService.createEvent,
+    mutationFn: (data: CreateEventData) => eventService.createEvent(data),
     onSuccess: () => {
       // Invalidate events list
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
@@ -40,8 +48,8 @@ export const useUpdateEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<UpdateEventData> }) =>
-      eventsService.updateEvent(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateEventData> }) =>
+      eventService.updateEvent(id, data),
     onSuccess: (_, { id }) => {
       // Invalidate specific event and events list
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(id) });
@@ -55,120 +63,10 @@ export const useDeleteEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: eventsService.deleteEvent,
+    mutationFn: (id: number) => eventService.deleteEvent(id),
     onSuccess: () => {
       // Invalidate events list
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
-    },
-  });
-};
-
-// Hook for event planning
-export const useEventPlanning = (eventId: number) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.events.planning(eventId),
-    queryFn: () => eventsService.getEventPlanning(eventId),
-    enabled: !!eventId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-  });
-};
-
-// Hook for updating event planning
-export const useUpdateEventPlanning = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ eventId, data }: { eventId: number; data: Partial<EventPlanning> }) =>
-      eventsService.updateEventPlanning(eventId, data),
-    onSuccess: (_, { eventId }) => {
-      // Invalidate event planning
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.planning(eventId) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(eventId) });
-    },
-  });
-};
-
-// Hook for event music
-export const useEventMusic = (eventId: number) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.events.music(eventId),
-    queryFn: () => eventsService.getEventMusic(eventId),
-    enabled: !!eventId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-  });
-};
-
-// Hook for updating event music
-export const useUpdateEventMusic = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ eventId, data }: { eventId: number; data: Partial<EventMusicIdeas> }) =>
-      eventsService.updateEventMusic(eventId, data),
-    onSuccess: (_, { eventId }) => {
-      // Invalidate event music
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.music(eventId) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(eventId) });
-    },
-  });
-};
-
-// Hook for event documents
-export const useEventDocuments = (eventId: number) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.events.documents(eventId),
-    queryFn: () => eventsService.getEventDocuments(eventId),
-    enabled: !!eventId,
-    staleTime: 1000 * 60 * 1, // 1 minute
-  });
-};
-
-// Hook for uploading document
-export const useUploadEventDocument = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      eventId,
-      file,
-      documentType,
-    }: {
-      eventId: number;
-      file: File;
-      documentType: 'pdf' | 'email' | 'note';
-    }) => eventsService.uploadEventDocument(eventId, file, documentType),
-    onSuccess: (_, { eventId }) => {
-      // Invalidate event documents
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.documents(eventId) });
-    },
-  });
-};
-
-// Hook for deleting document
-export const useDeleteEventDocument = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ eventId, documentId }: { eventId: number; documentId: number }) =>
-      eventsService.deleteEventDocument(eventId, documentId),
-    onSuccess: (_, { eventId }) => {
-      // Invalidate event documents
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.documents(eventId) });
-    },
-  });
-};
-
-// Hook for processing document with AI
-export const useProcessDocument = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ eventId, documentId }: { eventId: number; documentId: number }) =>
-      eventsService.processDocument(eventId, documentId),
-    onSuccess: (_, { eventId }) => {
-      // Invalidate event documents and planning
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.documents(eventId) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.planning(eventId) });
     },
   });
 };

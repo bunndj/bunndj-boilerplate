@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -16,12 +17,12 @@ return new class extends Migration
             
             // Event Basic Information
             $table->string('name')->nullable();
-            $table->enum('event_type', ['Wedding', 'Corporate', 'Birthday', 'Other'])->default('Wedding');
+            $table->string('event_type')->default('Wedding');
             $table->date('event_date');
             $table->time('setup_time')->nullable();
             $table->time('start_time')->nullable();
             $table->time('end_time')->nullable();
-            $table->enum('booking_status', ['Planning', 'Booked', 'Confirmed', 'Completed'])->default('Planning');
+            $table->string('booking_status')->default('Planning');
             
             // Service Information
             $table->string('service_package')->nullable();
@@ -42,6 +43,12 @@ return new class extends Migration
             
             $table->timestamps();
         });
+
+        // Add check constraints for PostgreSQL to simulate ENUM behavior
+        if (config('database.default') === 'pgsql') {
+            DB::statement("ALTER TABLE events ADD CONSTRAINT events_event_type_check CHECK (event_type IN ('Wedding', 'Corporate', 'Birthday', 'Other'))");
+            DB::statement("ALTER TABLE events ADD CONSTRAINT events_booking_status_check CHECK (booking_status IN ('Planning', 'Booked', 'Confirmed', 'Completed'))");
+        }
     }
 
     /**
