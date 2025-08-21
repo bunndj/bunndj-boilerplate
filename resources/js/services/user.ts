@@ -1,7 +1,7 @@
 import apiClient from './api-client';
 import type { User, PaginatedResponse } from '@/types';
 
-export const usersService = {
+export const userService = {
   // Get all users (admin only)
   getUsers: async (params?: any): Promise<PaginatedResponse<User>> => {
     const response = await apiClient.get('/api/users', { params });

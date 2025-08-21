@@ -2,7 +2,7 @@ import React, { createContext, ReactNode, useState, useEffect } from 'react';
 import { authService } from '@/services';
 import { setAuthToken } from '@/services/api-client';
 import { authStorage } from '@/utils/storage';
-import type { AuthContextType, User } from '@/types/auth';
+import type { AuthContextType, User } from '@/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
