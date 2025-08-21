@@ -1,12 +1,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuthContext';
+import { useAuth, useNotification } from '@/hooks';
 import { dashboardRoute } from '@/routes/routeConfig';
-import { loginSchema, type LoginFormData } from '@/schemas/auth';
+import { loginSchema, type LoginFormData } from '@/schemas';
 
 function SignIn() {
   const { login } = useAuth();
+  const { addNotification } = useNotification();
   const navigate = useNavigate();
 
   const {
@@ -21,8 +22,18 @@ function SignIn() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password);
+      addNotification({
+        type: 'success',
+        title: 'Welcome back!',
+        message: 'You have successfully signed in to your account.',
+      });
       navigate(dashboardRoute);
     } catch (err: any) {
+      addNotification({
+        type: 'error',
+        title: 'Sign in failed',
+        message: err.response?.data?.message || 'Please check your credentials and try again.',
+      });
       setError('root', {
         type: 'server',
         message: err.response?.data?.message || 'Login failed',
@@ -32,7 +43,7 @@ function SignIn() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex items-center justify-center p-3 sm:p-4 lg:p-6"
       style={{
         backgroundImage: 'url(/assets/background.jpg)',
         backgroundSize: 'cover',
@@ -40,19 +51,19 @@ function SignIn() {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <div className="bg-secondary/80 backdrop-blur-sm rounded-xl shadow-lg max-w-md w-full mx-4">
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
+      <div className="bg-secondary/80 backdrop-blur-sm rounded-xl shadow-lg w-full max-w-sm sm:max-w-md mx-auto">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="flex justify-center mb-3 sm:mb-4">
               <img
                 src="/assets/logo.png"
                 alt="Bunn DJ Planning Logo"
-                className="h-12 w-auto object-contain"
+                className="h-10 sm:h-12 w-auto object-contain"
                 style={{ aspectRatio: '160/51' }}
               />
             </div>
-            <h1 className="text-3xl font-bold text-brand mb-2">Welcome Back, DJ!</h1>
-            <p className="text-white">Sign in to manage your wedding events</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">Welcome Back, DJ!</h1>
+            <p className="text-white text-sm sm:text-base">Sign in to manage your wedding events</p>
           </div>
 
           {errors.root && (
@@ -61,7 +72,7 @@ function SignIn() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-brand mb-2">
                 Email Address
@@ -70,8 +81,10 @@ function SignIn() {
                 type="email"
                 id="email"
                 {...register('email')}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                  errors.email
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-brand focus:border-brand'
                 }`}
                 placeholder="your.email@example.com"
               />
@@ -79,20 +92,17 @@ function SignIn() {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-brand">
-                  Password
-                </label>
-                <a href="#" className="text-sm text-brand hover:text-brand-dark">
-                  Forgot password?
-                </a>
-              </div>
+              <label htmlFor="password" className="block text-sm font-medium text-brand mb-2">
+                Password
+              </label>
               <input
                 type="password"
                 id="password"
                 {...register('password')}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                  errors.password
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-brand focus:border-brand'
                 }`}
                 placeholder="Enter your password"
               />
@@ -104,7 +114,7 @@ function SignIn() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-brand hover:bg-brand-dark disabled:bg-gray-400 text-secondary font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+              className="w-full bg-brand hover:bg-brand-dark disabled:bg-gray-400 text-secondary font-semibold py-2.5 sm:py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 text-sm sm:text-base"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
@@ -136,11 +146,20 @@ function SignIn() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-white text-sm mb-1">New to DJ Planning Hub?</p>
-            <Link to="/signup" className="text-brand hover:text-brand-dark font-medium">
+          <div className="mt-4 sm:mt-6 text-center">
+            <p className="text-white text-xs sm:text-sm mb-1">New to DJ Planning Hub?</p>
+            <Link
+              to="/signup"
+              className="text-brand hover:text-brand-dark font-medium text-sm sm:text-base"
+            >
               Create your DJ account
             </Link>
+          </div>
+
+          <div className="mt-3 sm:mt-4 text-center">
+            <a href="#" className="text-brand hover:text-brand-dark text-xs sm:text-sm">
+              Forgot your password?
+            </a>
           </div>
         </div>
       </div>

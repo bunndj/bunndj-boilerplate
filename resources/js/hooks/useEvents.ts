@@ -1,15 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { eventService } from '@/services/event-service';
-import type { CreateEventData } from '@/types/event';
-
-// Query keys for caching
-const QUERY_KEYS = {
-  events: {
-    all: ['events'] as const,
-    list: (params?: any) => [...QUERY_KEYS.events.all, 'list', params] as const,
-    detail: (id: number) => [...QUERY_KEYS.events.all, 'detail', id] as const,
-  },
-};
+import { eventService } from '@/services';
+import type { CreateEventData } from '@/types';
+import { QUERY_KEYS } from '@/types';
 
 // Hook for getting all events
 export const useEvents = () => {

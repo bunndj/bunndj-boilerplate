@@ -12,6 +12,8 @@ interface PhoneInputWithFormProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  labelClassName?: string;
+  requiredClassName?: string;
 }
 
 const PhoneInputWithForm: React.FC<PhoneInputWithFormProps> = ({
@@ -24,6 +26,8 @@ const PhoneInputWithForm: React.FC<PhoneInputWithFormProps> = ({
   placeholder,
   required = false,
   className,
+  labelClassName,
+  requiredClassName,
 }) => {
   // Register the field with react-hook-form
   register(name, {
@@ -73,6 +77,8 @@ const PhoneInputWithForm: React.FC<PhoneInputWithFormProps> = ({
       placeholder={placeholder}
       required={required}
       className={className}
+      labelClassName={labelClassName}
+      requiredClassName={requiredClassName}
     />
   );
 };

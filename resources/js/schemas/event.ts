@@ -19,6 +19,9 @@ const addOnItemSchema = z.object({
   total_price: z.number().min(0, 'Total price must be 0 or greater'),
 });
 
+// Export the AddOnItem type
+export type AddOnItem = z.infer<typeof addOnItemSchema>;
+
 // Create event schema matching backend validation
 export const createEventSchema = z
   .object({
@@ -33,14 +36,21 @@ export const createEventSchema = z
       .min(1, 'Service package is required')
       .max(255, 'Service package name is too long'),
     service_description: z.string().optional(),
-    guest_count: z.number().min(1, 'Guest count must be at least 1'),
+    guest_count: z
+      .number({ message: 'Please enter a valid number of guests' })
+      .min(1, 'Please enter the number of guests (minimum 1)')
+      .optional(),
 
     // Venue fields
     venue_name: z.string().max(255, 'Venue name is too long').optional(),
     venue_address: z.string().max(255, 'Venue address is too long').optional(),
     venue_city: z.string().max(100, 'Venue city is too long').optional(),
     venue_state: z.string().max(2, 'Venue state must be 2 characters').optional(),
-    venue_zipcode: z.string().max(10, 'Venue zipcode is too long').optional(),
+    venue_zipcode: z
+      .string()
+      .regex(/^[0-9]{5}$/, 'Venue zipcode must be exactly 5 digits')
+      .optional()
+      .or(z.literal('')),
     venue_phone: z.string().max(20, 'Phone number is too long').optional().or(z.literal('')),
     venue_email: z
       .string()
@@ -70,7 +80,10 @@ export const createEventSchema = z
     client_address_line2: z.string().max(255, 'Address line 2 is too long').optional(),
     client_city: z.string().min(1, 'City is required').max(100, 'City is too long'),
     client_state: z.string().min(1, 'State is required').max(2, 'State must be 2 characters'),
-    client_zipcode: z.string().min(1, 'Zipcode is required').max(10, 'Zipcode is too long'),
+    client_zipcode: z
+      .string()
+      .min(1, 'Zipcode is required')
+      .regex(/^[0-9]{5}$/, 'Zipcode must be exactly 5 digits'),
 
     // Custom client fields
     partner_name: z.string().max(255, 'Partner name is too long').optional(),
@@ -97,9 +110,13 @@ export const createEventSchema = z
       .or(z.literal('')),
 
     // Financial fields
-    package: z.number().min(0, 'Package price must be 0 or greater'),
+    package: z
+      .number({ message: 'Please enter a valid package price' })
+      .min(0.01, 'Package price must be greater than $0'),
     add_ons: z.array(addOnItemSchema).optional(),
-    deposit_value: z.number().min(0, 'Deposit must be 0 or greater'),
+    deposit_value: z
+      .number({ message: 'Please enter a valid deposit amount' })
+      .min(0, 'Please enter the deposit amount (minimum $0)'),
   })
   .refine(
     data => {
@@ -116,3 +133,52 @@ export const createEventSchema = z
 
 // Export the form data type
 export type CreateEventFormData = z.infer<typeof createEventSchema>;
+
+// Default event form values
+export const defaultEventFormValues: CreateEventFormData = {
+  // Event information
+  name: '',
+  event_date: '',
+  setup_time: '',
+  start_time: '',
+  end_time: '',
+  service_package: '',
+  service_description: '',
+  guest_count: undefined, // Will trigger validation
+
+  // Venue fields
+  venue_name: '',
+  venue_address: '',
+  venue_city: '',
+  venue_state: '',
+  venue_zipcode: '',
+  venue_phone: '',
+  venue_email: '',
+
+  // Client information fields
+  client_firstname: '',
+  client_lastname: '',
+  client_organization: '',
+  client_cell_phone: '',
+  client_home_phone: '',
+  client_email: '',
+  client_address: '',
+  client_address_line2: '',
+  client_city: '',
+  client_state: '',
+  client_zipcode: '',
+
+  // Custom client fields
+  partner_name: '',
+  partner_email: '',
+  mob_fog: '',
+  mob_fog_email: '',
+  other_contact: '',
+  poc_email_phone: '',
+  vibo_link: '',
+
+  // Financial fields
+  package: 0, // Will trigger validation
+  add_ons: [],
+  deposit_value: 0, // Will trigger validation
+};
