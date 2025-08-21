@@ -5,6 +5,8 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryProvider } from './providers/QueryProvider';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationContainer from './components/Notification/NotificationContainer';
 import { Routes } from './routes';
 
 const container = document.getElementById('app');
@@ -13,9 +15,12 @@ if (container) {
   root.render(
     <QueryProvider>
       <AuthProvider>
-        <Router>
-          <Routes />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <Routes />
+            <NotificationContainer />
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </QueryProvider>
   );

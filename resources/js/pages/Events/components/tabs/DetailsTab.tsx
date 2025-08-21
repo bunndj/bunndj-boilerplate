@@ -1,6 +1,6 @@
 import React from 'react';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
-import { CreateEventFormData } from '@/schemas/event';
+import { CreateEventFormData } from '@/schemas';
 
 interface DetailsTabProps {
   register: UseFormRegister<CreateEventFormData>;

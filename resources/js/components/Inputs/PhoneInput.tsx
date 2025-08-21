@@ -12,6 +12,8 @@ interface PhoneInputProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  labelClassName?: string;
+  requiredClassName?: string;
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -26,6 +28,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   required = false,
   disabled = false,
   className = '',
+  labelClassName = 'block text-sm font-medium text-secondary mb-2',
+  requiredClassName = 'text-red-500 ml-1',
 }) => {
   const [formattedValue, setFormattedValue] = useState(value);
 
@@ -80,9 +84,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   const isValidLength = numbers.length === 0 || numbers.length === 10;
   const showValidationError = formattedValue && !isValidLength;
 
-  const baseClassName = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-colors ${
+  const baseClassName = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors text-sm sm:text-base ${
     error || showValidationError
-      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
       : 'border-gray-300 focus:ring-brand focus:border-brand'
   } ${disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'} ${className}`;
 
@@ -92,9 +96,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-secondary mb-2">
+        <label htmlFor={id} className={labelClassName}>
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className={requiredClassName}>*</span>}
         </label>
       )}
       <input

@@ -1,5 +1,5 @@
 import apiClient from './api-client';
-import type { Event, CreateEventData } from '@/types/event';
+import type { Event, CreateEventData } from '@/types';
 
 /**
  * API service for event management

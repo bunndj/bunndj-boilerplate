@@ -1,7 +1,7 @@
 import React from 'react';
 import { UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form';
-import { CreateEventFormData } from '@/schemas/event';
-import { PhoneInput, SelectState } from '@/components/Inputs';
+import { CreateEventFormData } from '@/schemas';
+import { PhoneInput, SelectState, ZipCodeInput } from '@/components/Inputs';
 
 interface ClientTabProps {
   register: UseFormRegister<CreateEventFormData>;
@@ -148,20 +148,13 @@ const ClientTab: React.FC<ClientTabProps> = ({ register, watch, setValue, errors
               label="State"
               required={true}
             />
-            <div>
-              <label className="block text-sm font-medium text-secondary mb-2">Zip Code *</label>
-              <input
-                type="text"
-                {...register('client_zipcode')}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent ${
-                  errors.client_zipcode ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="12345"
-              />
-              {errors.client_zipcode && (
-                <p className="text-red-600 text-sm mt-1">{errors.client_zipcode.message}</p>
-              )}
-            </div>
+            <ZipCodeInput
+              name="client_zipcode"
+              register={register}
+              error={errors.client_zipcode}
+              label="Zip Code"
+              required={true}
+            />
           </div>
         </div>
       </div>

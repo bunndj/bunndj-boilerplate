@@ -1,6 +1,6 @@
 import React from 'react';
 import { UseFormRegister, FieldError } from 'react-hook-form';
-import { usStates } from '@/types/event';
+import { usStates } from '@/types';
 
 interface SelectStateProps {
   name: string;

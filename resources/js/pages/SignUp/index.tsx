@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuthContext';
+import { useAuth } from '@/hooks';
 import { dashboardRoute } from '@/routes/routeConfig';
-import { registerSchema, type RegisterFormData } from '@/schemas/auth';
+import { registerSchema, type RegisterFormData } from '@/schemas';
+import { PhoneInput } from '@/components/Inputs';
 
 function SignUp() {
   const { register: registerUser } = useAuth();
@@ -11,6 +12,8 @@ function SignUp() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<RegisterFormData>({
@@ -50,7 +53,7 @@ function SignUp() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex items-center justify-center p-3 sm:p-4 lg:p-6"
       style={{
         backgroundImage: 'url(/assets/background.jpg)',
         backgroundSize: 'cover',
@@ -58,19 +61,21 @@ function SignUp() {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <div className="bg-secondary/80 backdrop-blur-sm rounded-xl shadow-lg max-w-lg w-full mx-4 border border-secondary-light">
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
+      <div className="bg-secondary/80 backdrop-blur-sm rounded-xl shadow-lg w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto border border-secondary-light">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="flex justify-center mb-3 sm:mb-4">
               <img
                 src="/assets/logo.png"
                 alt="Bunn DJ Planning Logo"
-                className="h-12 w-auto object-contain"
+                className="h-10 sm:h-12 w-auto object-contain"
                 style={{ aspectRatio: '160/51' }}
               />
             </div>
-            <h1 className="text-3xl font-bold text-brand mb-2">Join DJ Planning Hub</h1>
-            <p className="text-white">Create your DJ account and start planning amazing events</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">Join DJ Planning Hub</h1>
+            <p className="text-white text-sm sm:text-base">
+              Create your DJ account and start planning amazing events
+            </p>
           </div>
 
           {errors.root && (
@@ -79,18 +84,20 @@ function SignUp() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-brand mb-2">
                   Full Name *
-                </label>{' '}
+                </label>
                 <input
                   type="text"
                   id="name"
                   {...register('name')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                    errors.name ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                    errors.name
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-brand focus:border-brand'
                   }`}
                   placeholder="Your full name"
                 />
@@ -100,13 +107,15 @@ function SignUp() {
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-brand mb-2">
                   Username *
-                </label>{' '}
+                </label>
                 <input
                   type="text"
                   id="username"
                   {...register('username')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                    errors.username ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                    errors.username
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-brand focus:border-brand'
                   }`}
                   placeholder="Choose a username"
                 />
@@ -117,7 +126,6 @@ function SignUp() {
             </div>
 
             <div>
-              {' '}
               <label htmlFor="email" className="block text-sm font-medium text-brand mb-2">
                 Email Address *
               </label>
@@ -125,15 +133,17 @@ function SignUp() {
                 type="email"
                 id="email"
                 {...register('email')}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                  errors.email
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-brand focus:border-brand'
                 }`}
                 placeholder="your.email@example.com"
               />
               {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label htmlFor="organization" className="block text-sm font-medium text-brand mb-2">
                   DJ Company/Business *
@@ -142,8 +152,10 @@ function SignUp() {
                   type="text"
                   id="organization"
                   {...register('organization')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                    errors.organization ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                    errors.organization
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-brand focus:border-brand'
                   }`}
                   placeholder="Your DJ business name"
                 />
@@ -153,25 +165,22 @@ function SignUp() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-brand mb-2">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  {...register('phone')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                    errors.phone ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                <PhoneInput
+                  name="phone"
+                  register={register}
+                  watch={watch}
+                  setValue={setValue}
+                  error={errors.phone}
+                  label="Phone Number"
                   placeholder="(555) 123-4567"
+                  required={true}
+                  labelClassName="block text-sm font-medium text-brand mb-2"
+                  requiredClassName="text-brand ml-1"
                 />
-                {errors.phone && (
-                  <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>
-                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-brand mb-2">
                   Password *
@@ -180,8 +189,10 @@ function SignUp() {
                   type="password"
                   id="password"
                   {...register('password')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                    errors.password
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-brand focus:border-brand'
                   }`}
                   placeholder="Create a secure password"
                 />
@@ -201,8 +212,10 @@ function SignUp() {
                   type="password"
                   id="password_confirmation"
                   {...register('password_confirmation')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white text-secondary ${
-                    errors.password_confirmation ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-secondary text-sm sm:text-base ${
+                    errors.password_confirmation
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-brand focus:border-brand'
                   }`}
                   placeholder="Confirm your password"
                 />
@@ -214,10 +227,10 @@ function SignUp() {
               </div>
             </div>
 
-            <div className="bg-brand/10 border border-brand/30 rounded-lg p-4">
+            <div className="bg-brand/10 border border-brand/30 rounded-lg p-3 sm:p-4">
               <div className="flex items-start">
                 <svg
-                  className="w-5 h-5 text-brand mt-0.5 mr-3 flex-shrink-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-brand mt-0.5 mr-2 sm:mr-3 flex-shrink-0"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -228,7 +241,9 @@ function SignUp() {
                   />
                 </svg>
                 <div>
-                  <p className="text-sm text-white font-medium">Welcome to the DJ Community!</p>
+                  <p className="text-xs sm:text-sm text-white font-medium">
+                    Welcome to the DJ Community!
+                  </p>
                   <p className="text-xs text-brand mt-1">
                     Join thousands of DJs who are streamlining their wedding planning process.
                   </p>
@@ -239,7 +254,7 @@ function SignUp() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-brand hover:bg-brand/90 disabled:bg-gray-400 text-secondary font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+              className="w-full bg-brand hover:bg-brand/90 disabled:bg-gray-400 text-secondary font-semibold py-2.5 sm:py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 text-sm sm:text-base"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
@@ -271,9 +286,12 @@ function SignUp() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-300 mb-1 text-sm">Already have an account?</p>
-            <Link to="/signin" className="text-brand hover:text-brand-dark font-medium">
+          <div className="mt-4 sm:mt-6 text-center">
+            <p className="text-gray-300 mb-1 text-xs sm:text-sm">Already have an account?</p>
+            <Link
+              to="/signin"
+              className="text-brand hover:text-brand-dark font-medium text-sm sm:text-base"
+            >
               Sign in here
             </Link>
           </div>

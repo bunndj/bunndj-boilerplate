@@ -1,10 +1,58 @@
-// Add-on item structure
-export interface AddOnItem {
-  name: string;
-  price: number;
-  quantity: number;
-  total_price: number;
-}
+import type { CreateEventFormData, AddOnItem } from '@/schemas';
+
+// Re-export schema types for convenience
+export type CreateEventData = CreateEventFormData;
+export type { AddOnItem };
+
+// Tab type for create event modal
+export type CreateEventTab = 'client' | 'details' | 'financials' | 'venue';
+
+// Field to tab mapping for create event modal
+export const FIELD_TO_TAB_MAP: Record<string, CreateEventTab> = {
+  // Client tab fields
+  client_firstname: 'client',
+  client_lastname: 'client',
+  client_cell_phone: 'client',
+  client_email: 'client',
+  client_organization: 'client',
+  client_home_phone: 'client',
+  client_address: 'client',
+  client_address_line2: 'client',
+  client_city: 'client',
+  client_state: 'client',
+  client_zipcode: 'client',
+  partner_name: 'client',
+  partner_email: 'client',
+  mob_fog: 'client',
+  mob_fog_email: 'client',
+  other_contact: 'client',
+  poc_email_phone: 'client',
+  vibo_link: 'client',
+
+  // Details tab fields
+  name: 'details',
+  event_date: 'details',
+  setup_time: 'details',
+  start_time: 'details',
+  end_time: 'details',
+  service_package: 'details',
+  service_description: 'details',
+  guest_count: 'details',
+
+  // Financials tab fields
+  package: 'financials',
+  add_ons: 'financials',
+  deposit_value: 'financials',
+
+  // Venue tab fields
+  venue_name: 'venue',
+  venue_address: 'venue',
+  venue_city: 'venue',
+  venue_state: 'venue',
+  venue_zipcode: 'venue',
+  venue_phone: 'venue',
+  venue_email: 'venue',
+};
 
 // Event data structure from backend
 export interface Event {
@@ -58,61 +106,6 @@ export interface Event {
   created_at: string;
   updated_at: string;
 }
-
-// Data required for creating an event (without backend-generated fields)
-export interface CreateEventData {
-  name: string;
-  event_date: string;
-  setup_time: string;
-  start_time: string;
-  end_time: string;
-  service_package: string;
-  service_description?: string;
-  guest_count: number;
-
-  // Venue fields
-  venue_name?: string;
-  venue_address?: string;
-  venue_city?: string;
-  venue_state?: string;
-  venue_zipcode?: string;
-  venue_phone?: string;
-  venue_email?: string;
-
-  // Client information fields
-  client_firstname?: string;
-  client_lastname?: string;
-  client_organization?: string;
-  client_cell_phone?: string;
-  client_home_phone?: string;
-  client_email?: string;
-  client_address?: string;
-  client_address_line2?: string;
-  client_city?: string;
-  client_state?: string;
-  client_zipcode?: string;
-
-  // Custom client fields
-  partner_name?: string;
-  partner_email?: string;
-  mob_fog?: string;
-  mob_fog_email?: string;
-  other_contact?: string;
-  poc_email_phone?: string;
-  vibo_link?: string;
-
-  // Financial fields
-  package: number;
-  add_ons?: AddOnItem[];
-  deposit_value?: number;
-}
-
-// Service package options for UI
-export const servicePackageOptions = [
-  { value: 'basic', label: 'Basic Package' },
-  { value: 'standard', label: 'Standard Package' },
-  { value: 'premium', label: 'Premium Package' },
-] as const;
 
 // US states for venue state dropdown
 export const usStates = [
