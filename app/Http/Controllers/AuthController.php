@@ -78,4 +78,39 @@ class AuthController extends Controller
             'user' => $request->user()
         ]);
     }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'organization' => 'nullable|string|max:255',
+            'website' => 'nullable|string|max:255',
+            'cell_phone' => 'nullable|string|max:255',
+            'home_phone' => 'nullable|string|max:255',
+            'work_phone' => 'nullable|string|max:255',
+            'fax_phone' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'address_line_2' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+            'zipcode' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $user->update($validated);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'user' => $user->fresh()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile'
+            ], 500);
+        }
+    }
 }

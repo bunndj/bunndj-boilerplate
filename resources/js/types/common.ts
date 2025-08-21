@@ -1,10 +1,3 @@
-// Common types used across the application
-export interface ApiResponse<T = any> {
-  data: T;
-  message?: string;
-  success?: boolean;
-}
-
 export interface PaginatedResponse<T> {
   data: T[];
   current_page: number;
@@ -13,28 +6,6 @@ export interface PaginatedResponse<T> {
   total: number;
   from: number;
   to: number;
-}
-
-export interface ApiError {
-  message: string;
-  errors?: Record<string, string[]>;
-  status?: number;
-}
-
-export interface SelectOption {
-  value: string | number;
-  label: string;
-}
-
-// Form validation types
-export interface ValidationErrors {
-  [key: string]: string[];
-}
-
-// Loading states
-export interface LoadingState {
-  isLoading: boolean;
-  error: string | null;
 }
 
 // Query keys for React Query
