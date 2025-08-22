@@ -121,12 +121,12 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
   };
 
   return (
-    <div className="h-[calc(100vh-300px)] min-h-[600px] bg-white">
-      {/* Timeline Table Container with proper scrolling */}
+    <div className="h-auto lg:h-[calc(100vh-300px)] min-h-[300px] lg:min-h-[600px] bg-white">
+      {/* Timeline Table Container */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full flex flex-col">
-          {/* Timeline Table */}
-          <div className="flex-1 overflow-hidden bg-white rounded-lg border border-gray-200">
+          {/* Desktop Table Layout */}
+          <div className="hidden lg:block flex-1 overflow-hidden bg-white rounded-lg border border-gray-200">
             {/* Table Header - Fixed */}
             <div className="bg-blue-600 text-white sticky top-0 z-10">
               <div className="grid grid-cols-12 gap-4 p-4 font-medium text-sm">
@@ -157,7 +157,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                 formData.timeline_items.map((item, index) => (
                   <div
                     key={item.id}
-                    className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 transition-colors"
+                    className="grid grid-cols-24 gap-2 p-4 hover:bg-gray-50 transition-colors"
                   >
                     {/* Order */}
                     <div className="col-span-1 flex items-center space-x-1">
@@ -183,7 +183,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                     </div>
 
                     {/* Name */}
-                    <div className="col-span-4">
+                    <div className="col-span-6">
                       <input
                         type="text"
                         value={item.name}
@@ -194,7 +194,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                     </div>
 
                     {/* Start Time */}
-                    <div className="col-span-1">
+                    <div className="col-span-3">
                       <input
                         type="time"
                         value={item.start_time || ''}
@@ -204,7 +204,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                     </div>
 
                     {/* End Time */}
-                    <div className="col-span-1">
+                    <div className="col-span-3">
                       <input
                         type="time"
                         value={item.end_time || ''}
@@ -214,7 +214,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                     </div>
 
                     {/* Notes */}
-                    <div className="col-span-3">
+                    <div className="col-span-8">
                       <textarea
                         value={item.notes || ''}
                         onChange={e => updateTimelineItem(item.id, 'notes', e.target.value)}
@@ -225,7 +225,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                     </div>
 
                     {/* Time Offset */}
-                    <div className="col-span-1">
+                    <div className="col-span-2">
                       <input
                         type="number"
                         value={item.time_offset || ''}
@@ -252,6 +252,127 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                 ))
               )}
             </div>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="lg:hidden p-3">
+            {formData.timeline_items.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 border border-gray-200 rounded-lg">
+                <div className="text-4xl mb-2">📅</div>
+                <p>No timeline activities yet</p>
+                <p className="text-sm mt-2">Click &quot;Add&quot; above to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                {formData.timeline_items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                  >
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-600">#{index + 1}</span>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => moveItem(item.id, 'up')}
+                            disabled={index === 0}
+                            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => moveItem(item.id, 'down')}
+                            disabled={index === formData.timeline_items.length - 1}
+                            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeTimelineItem(item.id)}
+                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                        title="Delete activity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Activity Name */}
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Activity Name
+                      </label>
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={e => updateTimelineItem(item.id, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="Activity name"
+                      />
+                    </div>
+
+                    {/* Time Row */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          value={item.start_time || ''}
+                          onChange={e => updateTimelineItem(item.id, 'start_time', e.target.value)}
+                          className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          value={item.end_time || ''}
+                          onChange={e => updateTimelineItem(item.id, 'end_time', e.target.value)}
+                          className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                      <textarea
+                        value={item.notes || ''}
+                        onChange={e => updateTimelineItem(item.id, 'notes', e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                        placeholder="Add notes about this activity..."
+                      />
+                    </div>
+
+                    {/* Time Offset */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Time Offset (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        value={item.time_offset || ''}
+                        onChange={e =>
+                          updateTimelineItem(item.id, 'time_offset', parseInt(e.target.value) || 0)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

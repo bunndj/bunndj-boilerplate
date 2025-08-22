@@ -197,9 +197,35 @@ const PlanningForm: React.FC<PlanningFormProps> = ({ onSave, initialData = {} })
   };
 
   return (
-    <div className="flex h-[calc(100vh-300px)] min-h-[600px] bg-white">
-      {/* Left Sidebar - Tabs */}
-      <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+    <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-300px)] min-h-[400px] lg:min-h-[600px] bg-white">
+      {/* Mobile Tabs - Horizontal Scroll */}
+      <div className="lg:hidden bg-gray-50 border-b border-gray-200 p-3 overflow-x-auto">
+        <div className="flex space-x-2 min-w-max">
+          {tabs.map(tab => {
+            const completion = getTabCompletion(tab.id);
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-shrink-0 flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                    : 'text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <span className="text-base">{tab.icon}</span>
+                <span className="font-medium">{tab.label}</span>
+                <span className="text-xs text-gray-500 bg-white px-1 rounded">
+                  {completion.filled}/{completion.total}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Sidebar - Vertical Tabs */}
+      <div className="hidden lg:block w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Planning Sections</h3>
           <div className="text-xs text-gray-500 flex items-center">
@@ -233,19 +259,26 @@ const PlanningForm: React.FC<PlanningFormProps> = ({ onSave, initialData = {} })
         </nav>
       </div>
 
-      {/* Right Content Area */}
-      <div className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      {/* Content Area */}
+      <div className="flex-1 p-3 sm:p-4 lg:p-8 overflow-y-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-4 lg:mb-6">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">
               {tabs.find(tab => tab.id === activeTab)?.label}
             </h2>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Please fill out the information below to help us plan your perfect event.
             </p>
+            {/* Mobile Auto-save indicator */}
+            <div className="lg:hidden mt-2 text-xs text-gray-500 flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              Auto-saving
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">{renderTabContent()}</div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 lg:p-6">
+            {renderTabContent()}
+          </div>
         </div>
       </div>
     </div>

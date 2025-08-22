@@ -233,49 +233,49 @@ const EventPlanning: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
         {/* Header */}
         <div className="mb-4 animate-slide-up">
           <button
             onClick={() => navigate('/events')}
             className="flex items-center text-gray-300 hover:text-white mb-4 transition-all duration-200 group hover:scale-105"
           >
-            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
-            Back to Events
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
+            <span className="text-sm sm:text-base">Back to Events</span>
           </button>
         </div>
 
         {/* Planning Forms */}
         {showPlanningForm ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Save Status Header */}
-            <div className="bg-white rounded-lg shadow-lg p-4 hover-lift animate-scale-in">
-              <div className="flex items-center justify-between">
+            <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 hover-lift animate-scale-in">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1 animate-fade-in">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 animate-fade-in">
                     Event Planning
                   </h3>
-                  <p className="text-sm text-gray-600 animate-slide-up animation-delay-100">
+                  <p className="text-xs sm:text-sm text-gray-600 animate-slide-up animation-delay-100">
                     Plan your perfect wedding day with our comprehensive tools!
                   </p>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center justify-start sm:justify-end">
                   {saveStatus === 'saving' && (
                     <div className="flex items-center text-blue-600">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      <span className="text-sm">Saving...</span>
+                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-blue-600 mr-2"></div>
+                      <span className="text-xs sm:text-sm">Saving...</span>
                     </div>
                   )}
                   {saveStatus === 'success' && (
                     <div className="flex items-center text-green-600">
-                      <Check className="w-4 h-4 mr-2" />
-                      <span className="text-sm">Saved successfully!</span>
+                      <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                      <span className="text-xs sm:text-sm">Saved successfully!</span>
                     </div>
                   )}
                   {saveStatus === 'error' && (
                     <div className="flex items-center text-red-600">
-                      <X className="w-4 h-4 mr-2" />
-                      <span className="text-sm">Error saving. Please try again.</span>
+                      <X className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                      <span className="text-xs sm:text-sm">Error saving. Please try again.</span>
                     </div>
                   )}
                 </div>
@@ -284,14 +284,18 @@ const EventPlanning: React.FC = () => {
 
             {/* Planning Sections Form */}
             <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-100">
-              <div className="p-4 border-b border-gray-200 bg-blue-50">
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">📋</span>
-                  <h3 className="text-lg font-semibold text-gray-900">Planning Sections</h3>
+                  <span className="text-base sm:text-lg">📋</span>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                      Planning Sections
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                      Fill out the details to help us plan your perfect day!
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  Fill out the details to help us plan your perfect day!
-                </p>
               </div>
               <PlanningForm
                 onSave={handlePlanningFormSave}
@@ -301,14 +305,18 @@ const EventPlanning: React.FC = () => {
 
             {/* Music Ideas Form */}
             <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-200">
-              <div className="p-4 border-b border-gray-200 bg-purple-50">
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-purple-50">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">🎵</span>
-                  <h3 className="text-lg font-semibold text-gray-900">Music Ideas</h3>
+                  <span className="text-base sm:text-lg">🎵</span>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                      Music Ideas
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                      Add your music preferences and special song requests!
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  Add your music preferences and special song requests!
-                </p>
               </div>
               <MusicIdeasForm
                 onSave={handleMusicIdeasSave}
@@ -318,28 +326,29 @@ const EventPlanning: React.FC = () => {
 
             {/* Timeline Form */}
             <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-300">
-              <div className="p-4 border-b border-gray-200 bg-green-50">
-                <div className="flex items-center justify-between">
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-green-50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                   <div className="flex items-center space-x-2">
-                    <span className="text-lg">⏰</span>
+                    <span className="text-base sm:text-lg">⏰</span>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Timeline</h3>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Timeline</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
                         Plan your wedding day timeline with activities and time slots!
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-between sm:justify-end space-x-3">
                     <div className="text-xs text-gray-500 flex items-center">
                       <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                       Auto-saving
                     </div>
                     <button
                       id="timeline-add-activity-btn"
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                      className="px-3 py-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Activity</span>
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Add Activity</span>
+                      <span className="sm:hidden">Add</span>
                     </button>
                   </div>
                 </div>
@@ -351,19 +360,19 @@ const EventPlanning: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-lg flex flex-col h-[600px] hover-lift animate-scale-in animation-delay-200">
+          <div className="bg-white rounded-lg shadow-lg flex flex-col h-[500px] sm:h-[600px] hover-lift animate-scale-in animation-delay-200">
             {/* Chat Header */}
-            <div className="border-b border-gray-200 p-4">
-              <h3 className="text-lg font-semibold text-gray-900 animate-fade-in">
+            <div className="border-b border-gray-200 p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 animate-fade-in">
                 Planning Assistant
               </h3>
-              <p className="text-sm text-gray-600 animate-slide-up animation-delay-100">
+              <p className="text-xs sm:text-sm text-gray-600 animate-slide-up animation-delay-100">
                 Let&apos;s plan your perfect wedding day!
               </p>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
               {messages.map((message, index) => (
                 <div
                   key={message.id}
@@ -371,11 +380,11 @@ const EventPlanning: React.FC = () => {
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                    className={`max-w-[280px] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                       message.isBot ? 'bg-gray-100 text-gray-900' : 'bg-brand text-white'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-xs sm:text-sm">{message.text}</p>
                     <p className="text-xs mt-1 opacity-70">
                       {message.timestamp.toLocaleTimeString([], {
                         hour: '2-digit',
@@ -389,7 +398,7 @@ const EventPlanning: React.FC = () => {
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex justify-start animate-slide-up">
-                  <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
+                  <div className="bg-gray-100 text-gray-900 px-3 sm:px-4 py-2 rounded-lg">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                       <div
@@ -407,9 +416,9 @@ const EventPlanning: React.FC = () => {
             </div>
 
             {/* Options/Actions Area */}
-            <div className="border-t border-gray-200 p-4">
+            <div className="border-t border-gray-200 p-3 sm:p-4">
               {messages.length > 0 && messages[messages.length - 1].options && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                   {messages[messages.length - 1].options!.map((option, index) => (
                     <button
                       key={index}
@@ -420,10 +429,12 @@ const EventPlanning: React.FC = () => {
                           handleOptionClick(option);
                         }
                       }}
-                      className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 hover:scale-105 animate-glow"
+                      className="bg-brand hover:bg-brand-dark text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 animate-glow text-sm"
                     >
-                      {option === 'Upload Timeline' && <Upload className="w-4 h-4" />}
-                      {option === 'Start Questions' && <FileText className="w-4 h-4" />}
+                      {option === 'Upload Timeline' && <Upload className="w-3 h-3 sm:w-4 sm:h-4" />}
+                      {option === 'Start Questions' && (
+                        <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                      )}
                       <span>{option}</span>
                     </button>
                   ))}

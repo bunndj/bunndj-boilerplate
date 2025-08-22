@@ -71,7 +71,7 @@ const MusicTab: React.FC<MusicTabProps> = ({ songs, onChange, limit, categoryNam
                 key={index}
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col sm:grid sm:grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Song Title *
@@ -94,7 +94,7 @@ const MusicTab: React.FC<MusicTabProps> = ({ songs, onChange, limit, categoryNam
                       placeholder="Enter artist name"
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div className="flex flex-col sm:flex-row sm:items-end gap-2">
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Client Visible Title
@@ -109,7 +109,7 @@ const MusicTab: React.FC<MusicTabProps> = ({ songs, onChange, limit, categoryNam
                     </div>
                     <button
                       onClick={() => removeSong(index)}
-                      className="ml-3 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                      className="self-center sm:self-auto p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
                       title="Remove song"
                     >
                       <X className="w-5 h-5" />
@@ -127,7 +127,7 @@ const MusicTab: React.FC<MusicTabProps> = ({ songs, onChange, limit, categoryNam
         <div className="border-t pt-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Song</h3>
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="flex flex-col sm:grid sm:grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Song Title *</label>
                 <input
@@ -164,7 +164,7 @@ const MusicTab: React.FC<MusicTabProps> = ({ songs, onChange, limit, categoryNam
             <button
               onClick={addSong}
               disabled={!newSong.song_title.trim()}
-              className="w-full md:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200"
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200"
             >
               Add Song
             </button>
