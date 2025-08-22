@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Upload } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, Check, X, Plus } from 'lucide-react';
 import {
   useEvent,
   useEventPlanning,
@@ -268,25 +268,13 @@ const EventPlanning: React.FC = () => {
                   )}
                   {saveStatus === 'success' && (
                     <div className="flex items-center text-green-600">
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <Check className="w-4 h-4 mr-2" />
                       <span className="text-sm">Saved successfully!</span>
                     </div>
                   )}
                   {saveStatus === 'error' && (
                     <div className="flex items-center text-red-600">
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <X className="w-4 h-4 mr-2" />
                       <span className="text-sm">Error saving. Please try again.</span>
                     </div>
                   )}
@@ -350,13 +338,7 @@ const EventPlanning: React.FC = () => {
                       id="timeline-add-activity-btn"
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <Plus className="w-4 h-4" />
                       <span>Add Activity</span>
                     </button>
                   </div>

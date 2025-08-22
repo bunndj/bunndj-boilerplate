@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import type { Song } from '@/types';
 
 interface MusicTabProps {
@@ -111,13 +112,7 @@ const MusicTab: React.FC<MusicTabProps> = ({ songs, onChange, limit, categoryNam
                       className="ml-3 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
                       title="Remove song"
                     >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>

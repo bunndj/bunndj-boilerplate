@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import type { TimelineFormData, TimelineItem } from '@/types';
 import { DEFAULT_TIMELINE_SECTIONS } from '@/types';
 import { useDebounce } from '@/hooks';
@@ -168,13 +169,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Move up"
                         >
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
+                          <ChevronUp className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => moveItem(item.id, 'down')}
@@ -182,13 +177,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Move down"
                         >
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
+                          <ChevronDown className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
@@ -256,13 +245,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                         className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
                         title="Delete activity"
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
