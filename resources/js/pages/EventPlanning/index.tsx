@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Upload } from 'lucide-react';
-import { useEvent, useEventPlanning, useSaveEventPlanning } from '@/hooks';
+import {
+  useEvent,
+  useEventPlanning,
+  useSaveEventPlanning,
+  useEventMusicIdeas,
+  useSaveEventMusicIdeas,
+  useEventTimeline,
+  useSaveEventTimeline,
+} from '@/hooks';
 import PlanningForm from './components/PlanningForm';
-import { PlanningFormData } from '@/types';
+import MusicIdeasForm from './components/MusicIdeasForm';
+import TimelineForm from './components/TimelineForm';
+import { PlanningFormData, MusicIdeasFormData, TimelineFormData } from '@/types';
 
 interface ChatMessage {
   id: string;
@@ -32,6 +42,22 @@ const EventPlanning: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+
+  // Add music ideas hooks
+  const {
+    data: musicIdeasData,
+    isLoading: musicIdeasLoading,
+    error: musicIdeasError,
+  } = useEventMusicIdeas(eventId);
+  const saveMusicIdeasMutation = useSaveEventMusicIdeas();
+
+  // Add timeline hooks
+  const {
+    data: timelineData,
+    isLoading: timelineLoading,
+    error: timelineError,
+  } = useEventTimeline(eventId);
+  const saveTimelineMutation = useSaveEventTimeline();
 
   const addBotMessage = useCallback((text: string, options?: string[]) => {
     setIsTyping(true);
@@ -138,8 +164,42 @@ const EventPlanning: React.FC = () => {
     }
   };
 
-  const isLoading = eventLoading || planningLoading;
-  const error = eventError || planningError;
+  const handleMusicIdeasSave = async (data: MusicIdeasFormData) => {
+    try {
+      setSaveStatus('saving');
+      await saveMusicIdeasMutation.mutateAsync({ eventId, data });
+      setSaveStatus('success');
+
+      // Reset save status after showing success for a moment
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (error) {
+      setSaveStatus('error');
+      console.error('Error saving music ideas:', error);
+
+      // Reset error status after showing error for a moment
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    }
+  };
+
+  const handleTimelineSave = async (data: TimelineFormData) => {
+    try {
+      setSaveStatus('saving');
+      await saveTimelineMutation.mutateAsync({ eventId, data });
+      setSaveStatus('success');
+
+      // Reset save status after showing success for a moment
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (error) {
+      setSaveStatus('error');
+      console.error('Error saving timeline:', error);
+
+      // Reset error status after showing error for a moment
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    }
+  };
+
+  const isLoading = eventLoading || planningLoading || musicIdeasLoading || timelineLoading;
+  const error = eventError || planningError || musicIdeasError || timelineError;
 
   if (isLoading) {
     return (
@@ -185,18 +245,18 @@ const EventPlanning: React.FC = () => {
           </button>
         </div>
 
-        {/* Planning Form */}
+        {/* Planning Forms */}
         {showPlanningForm ? (
-          <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in">
+          <div className="space-y-6">
             {/* Save Status Header */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="bg-white rounded-lg shadow-lg p-4 hover-lift animate-scale-in">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1 animate-fade-in">
-                    Wedding Planning Form
+                    Event Planning
                   </h3>
                   <p className="text-sm text-gray-600 animate-slide-up animation-delay-100">
-                    Fill out the details to help us plan your perfect day!
+                    Plan your perfect wedding day with our comprehensive tools!
                   </p>
                 </div>
                 <div className="flex items-center">
@@ -233,11 +293,80 @@ const EventPlanning: React.FC = () => {
                 </div>
               </div>
             </div>
-            {/* Planning Form - Let it control its own height */}
-            <PlanningForm
-              onSave={handlePlanningFormSave}
-              initialData={planningData?.planning_data || undefined}
-            />
+
+            {/* Planning Sections Form */}
+            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-100">
+              <div className="p-4 border-b border-gray-200 bg-blue-50">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">📋</span>
+                  <h3 className="text-lg font-semibold text-gray-900">Planning Sections</h3>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Fill out the details to help us plan your perfect day!
+                </p>
+              </div>
+              <PlanningForm
+                onSave={handlePlanningFormSave}
+                initialData={planningData?.planning_data || undefined}
+              />
+            </div>
+
+            {/* Music Ideas Form */}
+            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-200">
+              <div className="p-4 border-b border-gray-200 bg-purple-50">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">🎵</span>
+                  <h3 className="text-lg font-semibold text-gray-900">Music Ideas</h3>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Add your music preferences and special song requests!
+                </p>
+              </div>
+              <MusicIdeasForm
+                onSave={handleMusicIdeasSave}
+                initialData={musicIdeasData?.music_ideas || undefined}
+              />
+            </div>
+
+            {/* Timeline Form */}
+            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-300">
+              <div className="p-4 border-b border-gray-200 bg-green-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">⏰</span>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Timeline</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Plan your wedding day timeline with activities and time slots!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                      Auto-saving
+                    </div>
+                    <button
+                      id="timeline-add-activity-btn"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>Add Activity</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <TimelineForm
+                onSave={handleTimelineSave}
+                initialData={timelineData?.timeline_data || undefined}
+              />
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-lg flex flex-col h-[600px] hover-lift animate-scale-in animation-delay-200">

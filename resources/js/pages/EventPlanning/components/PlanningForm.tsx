@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PlanningFormData, PlanningFormProps, PlanningTab } from '@/types';
 import { defaultPlanningFormValues } from '@/schemas';
+import { useDebounce } from '@/hooks';
 import GeneralInformationTab from './tabs/GeneralInformationTab';
 import CeremonyTab from './tabs/CeremonyTab';
 import AddOnsTab from './tabs/AddOnsTab';
@@ -18,6 +19,13 @@ const PlanningForm: React.FC<PlanningFormProps> = ({ onSave, initialData = {} })
 
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  // Create debounced save function (500ms delay)
+  const debouncedSave = useDebounce((data: PlanningFormData) => {
+    if (hasInitialized) {
+      onSave(data);
+    }
+  }, 500);
+
   // Initialize form data and mark as initialized
   useEffect(() => {
     if (!hasInitialized) {
@@ -25,7 +33,7 @@ const PlanningForm: React.FC<PlanningFormProps> = ({ onSave, initialData = {} })
     }
   }, [hasInitialized]);
 
-  // Auto-save on field changes (only after initialization)
+  // Auto-save on field changes (debounced)
   const handleInputChange = (field: keyof PlanningFormData, value: any) => {
     const newFormData = {
       ...formData,
@@ -33,10 +41,8 @@ const PlanningForm: React.FC<PlanningFormProps> = ({ onSave, initialData = {} })
     };
     setFormData(newFormData);
 
-    // Save immediately on field change (only after form is initialized)
-    if (hasInitialized) {
-      onSave(newFormData);
-    }
+    // Use debounced save instead of immediate save
+    debouncedSave(newFormData);
   };
 
   const tabs = [

@@ -1,0 +1,279 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import type { TimelineFormData, TimelineItem } from '@/types';
+import { DEFAULT_TIMELINE_SECTIONS } from '@/types';
+import { useDebounce } from '@/hooks';
+
+interface TimelineFormProps {
+  onSave: (data: TimelineFormData) => void;
+  initialData?: Partial<TimelineFormData>;
+}
+
+const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} }) => {
+  const [formData, setFormData] = useState<TimelineFormData>(() => {
+    // Initialize with default sections if no initial data
+    const defaultItems: TimelineItem[] = DEFAULT_TIMELINE_SECTIONS.map((section, index) => ({
+      ...section,
+      id: `default-${index}`,
+      order: index,
+    }));
+
+    return {
+      timeline_items: initialData.timeline_items || defaultItems,
+    };
+  });
+
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Create debounced save function (500ms delay)
+  const debouncedSave = useDebounce((data: TimelineFormData) => {
+    if (hasInitialized) {
+      onSave(data);
+    }
+  }, 500);
+
+  // Initialize form data and mark as initialized
+  useEffect(() => {
+    if (!hasInitialized) {
+      setHasInitialized(true);
+    }
+  }, [hasInitialized]);
+
+  // Auto-save on field changes (debounced) - save on every change
+  const updateFormData = (newData: TimelineFormData) => {
+    setFormData(newData);
+
+    // Save on every change (debounced)
+    debouncedSave(newData);
+  };
+
+  const addTimelineItem = useCallback(() => {
+    const newItem: TimelineItem = {
+      id: `custom-${Date.now()}`,
+      name: 'New Activity',
+      start_time: '',
+      end_time: '',
+      notes: '',
+      time_offset: 0,
+      order: formData.timeline_items.length,
+    };
+
+    const newData = {
+      ...formData,
+      timeline_items: [...formData.timeline_items, newItem],
+    };
+    setFormData(newData);
+
+    // Save the new data (debounced)
+    debouncedSave(newData);
+  }, [formData, debouncedSave]);
+
+  // Connect the header button to addTimelineItem function
+  useEffect(() => {
+    const button = document.getElementById('timeline-add-activity-btn');
+    if (button) {
+      const handleClick = () => addTimelineItem();
+      button.addEventListener('click', handleClick);
+      return () => button.removeEventListener('click', handleClick);
+    }
+  }, [addTimelineItem]);
+
+  const removeTimelineItem = (id: string) => {
+    const newData = {
+      ...formData,
+      timeline_items: formData.timeline_items.filter(item => item.id !== id),
+    };
+    updateFormData(newData);
+  };
+
+  const updateTimelineItem = (id: string, field: keyof TimelineItem, value: string | number) => {
+    const newData = {
+      ...formData,
+      timeline_items: formData.timeline_items.map(item =>
+        item.id === id ? { ...item, [field]: value } : item
+      ),
+    };
+    updateFormData(newData);
+  };
+
+  const moveItem = (id: string, direction: 'up' | 'down') => {
+    const items = [...formData.timeline_items];
+    const currentIndex = items.findIndex(item => item.id === id);
+
+    if (
+      (direction === 'up' && currentIndex > 0) ||
+      (direction === 'down' && currentIndex < items.length - 1)
+    ) {
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      [items[currentIndex], items[newIndex]] = [items[newIndex], items[currentIndex]];
+
+      // Update order numbers
+      items.forEach((item, index) => {
+        item.order = index;
+      });
+
+      const newData = {
+        ...formData,
+        timeline_items: items,
+      };
+      updateFormData(newData);
+    }
+  };
+
+  return (
+    <div className="h-[calc(100vh-300px)] min-h-[600px] bg-white">
+      {/* Timeline Table Container with proper scrolling */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full flex flex-col">
+          {/* Timeline Table */}
+          <div className="flex-1 overflow-hidden bg-white rounded-lg border border-gray-200">
+            {/* Table Header - Fixed */}
+            <div className="bg-blue-600 text-white sticky top-0 z-10">
+              <div className="grid grid-cols-12 gap-4 p-4 font-medium text-sm">
+                <div className="col-span-1">Order</div>
+                <div className="col-span-4">Name Of Activity</div>
+                <div className="col-span-1">Start Time</div>
+                <div className="col-span-1">End Time</div>
+                <div className="col-span-3">Notes</div>
+                <div className="col-span-1">Time Offset</div>
+                <div className="col-span-1">Actions</div>
+              </div>
+            </div>
+
+            {/* Table Body - Scrollable */}
+            <div
+              className="overflow-y-auto h-full divide-y divide-gray-200"
+              style={{ maxHeight: 'calc(100vh - 400px)' }}
+            >
+              {formData.timeline_items.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <div className="text-4xl mb-2">📅</div>
+                  <p>No timeline activities yet</p>
+                  <p className="text-sm mt-2">
+                    Click &quot;Add Activity&quot; above to get started
+                  </p>
+                </div>
+              ) : (
+                formData.timeline_items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    {/* Order */}
+                    <div className="col-span-1 flex items-center space-x-1">
+                      <span className="text-gray-600 text-sm">{index + 1}</span>
+                      <div className="flex flex-col space-y-1">
+                        <button
+                          onClick={() => moveItem(item.id, 'up')}
+                          disabled={index === 0}
+                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move up"
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => moveItem(item.id, 'down')}
+                          disabled={index === formData.timeline_items.length - 1}
+                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Name */}
+                    <div className="col-span-4">
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={e => updateTimelineItem(item.id, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="Activity name"
+                      />
+                    </div>
+
+                    {/* Start Time */}
+                    <div className="col-span-1">
+                      <input
+                        type="time"
+                        value={item.start_time || ''}
+                        onChange={e => updateTimelineItem(item.id, 'start_time', e.target.value)}
+                        className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    {/* End Time */}
+                    <div className="col-span-1">
+                      <input
+                        type="time"
+                        value={item.end_time || ''}
+                        onChange={e => updateTimelineItem(item.id, 'end_time', e.target.value)}
+                        className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    {/* Notes */}
+                    <div className="col-span-3">
+                      <textarea
+                        value={item.notes || ''}
+                        onChange={e => updateTimelineItem(item.id, 'notes', e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                        placeholder="Notes..."
+                      />
+                    </div>
+
+                    {/* Time Offset */}
+                    <div className="col-span-1">
+                      <input
+                        type="number"
+                        value={item.time_offset || ''}
+                        onChange={e =>
+                          updateTimelineItem(item.id, 'time_offset', parseInt(e.target.value) || 0)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-1">
+                      <button
+                        onClick={() => removeTimelineItem(item.id)}
+                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                        title="Delete activity"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TimelineForm;
