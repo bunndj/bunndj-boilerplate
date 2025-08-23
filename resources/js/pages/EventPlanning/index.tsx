@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Upload, Check, X, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, Check, X, Plus, Edit } from 'lucide-react';
 import {
   useEvent,
   useEventPlanning,
@@ -13,6 +13,7 @@ import {
 import PlanningForm from './components/PlanningForm';
 import MusicIdeasForm from './components/MusicIdeasForm';
 import TimelineForm from './components/TimelineForm';
+import EventModal from '@/components/EventModal';
 import { PlanningFormData, MusicIdeasFormData, TimelineFormData } from '@/types';
 
 interface ChatMessage {
@@ -27,6 +28,45 @@ const EventPlanning: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const eventId = id ? parseInt(id, 10) : 0;
+
+  // Helper function to extract time from ISO string without timezone conversion
+  const extractTimeFromISO = (isoString: string | null | undefined) => {
+    if (!isoString) return 'Not set';
+    try {
+      const timePart = isoString.split('T')[1]; // Get time part after 'T'
+      if (!timePart) return 'Not set';
+      const time = timePart.substring(0, 5); // Extract HH:MM
+
+      // Convert 24-hour format to 12-hour format
+      const [hours, minutes] = time.split(':');
+      const hour24 = parseInt(hours, 10);
+      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+      const ampm = hour24 >= 12 ? 'PM' : 'AM';
+
+      return `${hour12}:${minutes} ${ampm}`;
+    } catch (error) {
+      console.warn('Error parsing time:', error);
+      return 'Invalid time';
+    }
+  };
+
+  // Helper function to extract date from ISO string
+  const extractDateFromISO = (isoString: string | null | undefined) => {
+    if (!isoString) return 'Not set';
+    try {
+      const datePart = isoString.split('T')[0]; // Get date part before 'T'
+      const date = new Date(datePart + 'T00:00:00'); // Add time to avoid timezone issues
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.warn('Error parsing date:', error);
+      return 'Invalid date';
+    }
+  };
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(eventId);
   const {
     data: planningData,
@@ -42,6 +82,7 @@ const EventPlanning: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Add music ideas hooks
   const {
@@ -245,6 +286,68 @@ const EventPlanning: React.FC = () => {
           </button>
         </div>
 
+        {/* Event Details Header */}
+        {event && (
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 hover-lift animate-scale-in">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+                  {event.name}
+                </h1>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Date:</span>
+                    <span className="text-gray-800">{extractDateFromISO(event.event_date)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Setup:</span>
+                    <span className="text-gray-800">{extractTimeFromISO(event.setup_time)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Event:</span>
+                    <span className="text-gray-800">
+                      {extractTimeFromISO(event.start_time)} - {extractTimeFromISO(event.end_time)}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Venue:</span>
+                    <span className="text-gray-800">{event.venue_name || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Guests:</span>
+                    <span className="text-gray-800">{event.guest_count || 'TBD'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Package:</span>
+                    <span className="text-gray-800">{event.service_package || 'Not selected'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Client:</span>
+                    <span className="text-gray-800">
+                      {event.client_firstname} {event.client_lastname}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">Contact:</span>
+                    <span className="text-gray-800">
+                      {event.client_email || event.client_cell_phone || 'Not provided'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit Event</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Planning Forms */}
         {showPlanningForm ? (
           <div className="space-y-4 sm:space-y-6">
@@ -444,6 +547,17 @@ const EventPlanning: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Event Edit Modal */}
+      <EventModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onEventUpdated={() => {
+          setIsEditModalOpen(false);
+        }}
+        mode="update"
+        event={event}
+      />
     </div>
   );
 };

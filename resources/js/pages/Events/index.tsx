@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import CreateEventModal from './components/CreateEventModal';
+import EventModal from '@/components/EventModal';
 import { useEvents } from '@/hooks';
 import type { Event } from '@/types';
 import {
@@ -194,10 +194,11 @@ const Events: React.FC = () => {
         )}
 
         {/* Create Event Modal */}
-        <CreateEventModal
+        <EventModal
           isOpen={isCreateModalOpen}
           onClose={handleCloseModal}
           onEventCreated={handleEventCreated}
+          mode="create"
         />
       </div>
     </div>
