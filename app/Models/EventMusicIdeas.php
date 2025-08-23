@@ -57,48 +57,94 @@ class EventMusicIdeas extends Model
     }
 
     /**
-     * Add a song to must play list
+     * Get dedication songs
      */
-    public function addMustPlaySong(string $musicType, array $songData): void
+    public function getDedicationSongs(): array
     {
-        $musicIdeas = $this->music_ideas ?? ['must_play' => [], 'play_if_possible' => []];
-        $musicIdeas['must_play'][] = array_merge(['music_type' => $musicType], $songData);
-        $this->music_ideas = $musicIdeas;
+        return $this->music_ideas['dedication'] ?? [];
     }
 
     /**
-     * Add a song to play if possible list
+     * Get play only if requested songs
      */
-    public function addPlayIfPossibleSong(string $musicType, array $songData): void
+    public function getPlayOnlyIfRequestedSongs(): array
     {
-        $musicIdeas = $this->music_ideas ?? ['must_play' => [], 'play_if_possible' => []];
-        $musicIdeas['play_if_possible'][] = array_merge(['music_type' => $musicType], $songData);
-        $this->music_ideas = $musicIdeas;
+        return $this->music_ideas['play_only_if_requested'] ?? [];
     }
 
     /**
-     * Get total song count
+     * Get do not play songs
+     */
+    public function getDoNotPlaySongs(): array
+    {
+        return $this->music_ideas['do_not_play'] ?? [];
+    }
+
+    /**
+     * Get guest request songs
+     */
+    public function getGuestRequestSongs(): array
+    {
+        return $this->music_ideas['guest_request'] ?? [];
+    }
+
+    /**
+     * Get total song count across all categories
      */
     public function getTotalSongCount(): int
     {
         $mustPlay = count($this->getMustPlaySongs());
         $playIfPossible = count($this->getPlayIfPossibleSongs());
-        return $mustPlay + $playIfPossible;
+        $dedication = count($this->getDedicationSongs());
+        $playOnlyIfRequested = count($this->getPlayOnlyIfRequestedSongs());
+        $doNotPlay = count($this->getDoNotPlaySongs());
+        $guestRequest = count($this->getGuestRequestSongs());
+        
+        return $mustPlay + $playIfPossible + $dedication + $playOnlyIfRequested + $doNotPlay + $guestRequest;
     }
 
     /**
-     * Get must play song count
+     * Get song count for a specific category
      */
-    public function getMustPlayCount(): int
+    public function getCategorySongCount(string $category): int
     {
-        return count($this->getMustPlaySongs());
+        switch ($category) {
+            case 'must_play':
+                return count($this->getMustPlaySongs());
+            case 'play_if_possible':
+                return count($this->getPlayIfPossibleSongs());
+            case 'dedication':
+                return count($this->getDedicationSongs());
+            case 'play_only_if_requested':
+                return count($this->getPlayOnlyIfRequestedSongs());
+            case 'do_not_play':
+                return count($this->getDoNotPlaySongs());
+            case 'guest_request':
+                return count($this->getGuestRequestSongs());
+            default:
+                return 0;
+        }
     }
 
     /**
-     * Get play if possible song count
+     * Check if category is within limit
      */
-    public function getPlayIfPossibleCount(): int
+    public function isCategoryWithinLimit(string $category): bool
     {
-        return count($this->getPlayIfPossibleSongs());
+        $limits = [
+            'must_play' => 60,
+            'play_if_possible' => 30,
+            'dedication' => 10,
+            'play_only_if_requested' => 5,
+            'do_not_play' => 10,
+            'guest_request' => null, // unlimited
+        ];
+
+        $limit = $limits[$category] ?? null;
+        if ($limit === null) {
+            return true; // unlimited
+        }
+
+        return $this->getCategorySongCount($category) <= $limit;
     }
 }

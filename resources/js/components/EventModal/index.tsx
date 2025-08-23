@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { X, ArrowRight, ArrowLeft } from 'lucide-react';
 import { createEventSchema, type CreateEventFormData, defaultEventFormValues } from '@/schemas';
-import { useCreateEvent, useNotification } from '@/hooks';
-import { FIELD_TO_TAB_MAP, type CreateEventTab } from '@/types';
+import { useCreateEvent, useUpdateEvent, useNotification } from '@/hooks';
+import { FIELD_TO_TAB_MAP, type CreateEventTab, type Event } from '@/types';
 
 // Import tab components
 import ClientTab from './tabs/ClientTab';
@@ -11,13 +12,23 @@ import DetailsTab from './tabs/DetailsTab';
 import FinancialsTab from './tabs/FinancialsTab';
 import VenueTab from './tabs/VenueTab';
 
-interface CreateEventModalProps {
+interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onEventCreated: () => void;
+  onEventCreated?: () => void;
+  onEventUpdated?: () => void;
+  mode?: 'create' | 'update';
+  event?: Event | null;
 }
 
-const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, onEventCreated }) => {
+const EventModal: React.FC<EventModalProps> = ({
+  isOpen,
+  onClose,
+  onEventCreated,
+  onEventUpdated,
+  mode = 'create',
+  event = null,
+}) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeTab, setActiveTab] = useState<CreateEventTab>('client');
@@ -25,8 +36,105 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
     Array<{ name: string; price: number; quantity: number; total_price: number }>
   >([]);
 
-  const { mutate: createEvent, isPending } = useCreateEvent();
+  const { mutate: createEvent, isPending: isCreating } = useCreateEvent();
+  const { mutate: updateEvent, isPending: isUpdating } = useUpdateEvent();
   const { addNotification } = useNotification();
+
+  const isPending = isCreating || isUpdating;
+  const isUpdateMode = mode === 'update' && event;
+
+  // Prepare initial form values
+  const getInitialValues = useCallback((): CreateEventFormData => {
+    if (isUpdateMode) {
+      // Helper function to extract date from ISO string (YYYY-MM-DD format)
+      const extractDate = (isoString: string | null | undefined) => {
+        if (!isoString) return '';
+        try {
+          return isoString.split('T')[0]; // Extract date part before 'T'
+        } catch (error) {
+          console.warn('Error parsing date:', error);
+          return '';
+        }
+      };
+
+      // Helper function to extract time from ISO string (HH:MM format)
+      const extractTime = (isoString: string | null | undefined) => {
+        if (!isoString) return '';
+        try {
+          const timePart = isoString.split('T')[1]; // Get time part after 'T'
+          if (!timePart) return '';
+          return timePart.substring(0, 5); // Extract HH:MM (first 5 characters)
+        } catch (error) {
+          console.warn('Error parsing time:', error);
+          return '';
+        }
+      };
+
+      // Convert event data to form format
+      return {
+        ...defaultEventFormValues,
+        name: event.name || '',
+        client_firstname: event.client_firstname || '',
+        client_lastname: event.client_lastname || '',
+        client_organization: event.client_organization || '',
+        client_cell_phone: event.client_cell_phone || '',
+        client_home_phone: event.client_home_phone || '',
+        client_email: event.client_email || '',
+        client_address: event.client_address || '',
+        client_address_line2: event.client_address_line2 || '',
+        client_city: event.client_city || '',
+        client_state: event.client_state || '',
+        client_zipcode: event.client_zipcode || '',
+        event_date: extractDate(event.event_date),
+        setup_time: extractTime(event.setup_time),
+        start_time: extractTime(event.start_time),
+        end_time: extractTime(event.end_time),
+        service_package: event.service_package || '',
+        service_description: event.service_description || '',
+        guest_count: event.guest_count || undefined,
+        package:
+          typeof event.package === 'string'
+            ? parseFloat(event.package) || 0
+            : typeof event.package === 'number'
+              ? event.package
+              : 0,
+        venue_name: event.venue_name || '',
+        venue_address: event.venue_address || '',
+        venue_city: event.venue_city || '',
+        venue_state: event.venue_state || '',
+        venue_zipcode: event.venue_zipcode || '',
+        venue_phone: event.venue_phone || '',
+        venue_email: event.venue_email || '',
+        partner_name: event.partner_name || '',
+        partner_email: event.partner_email || '',
+        mob_fog: event.mob_fog || '',
+        mob_fog_email: event.mob_fog_email || '',
+        other_contact: event.other_contact || '',
+        poc_email_phone: event.poc_email_phone || '',
+        vibo_link: event.vibo_link || '',
+        deposit_value:
+          typeof event.deposit_value === 'string'
+            ? parseFloat(event.deposit_value) || 0
+            : typeof event.deposit_value === 'number'
+              ? event.deposit_value
+              : 0,
+        add_ons: Array.isArray(event.add_ons)
+          ? event.add_ons.map(addon => ({
+              name: addon.name || '',
+              price: typeof addon.price === 'number' ? addon.price : parseFloat(addon.price) || 0,
+              quantity:
+                typeof addon.quantity === 'number' ? addon.quantity : parseInt(addon.quantity) || 1,
+              total_price:
+                (typeof addon.price === 'number' ? addon.price : parseFloat(addon.price) || 0) *
+                (typeof addon.quantity === 'number'
+                  ? addon.quantity
+                  : parseInt(addon.quantity) || 1),
+            }))
+          : [],
+      };
+    }
+    return defaultEventFormValues;
+  }, [isUpdateMode, event]);
 
   const {
     register,
@@ -37,7 +145,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
     setValue,
   } = useForm<CreateEventFormData>({
     resolver: zodResolver(createEventSchema),
-    defaultValues: defaultEventFormValues,
+    defaultValues: getInitialValues(),
   });
 
   // Watch package and deposit for calculations
@@ -54,6 +162,30 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
       setTimeout(() => setIsVisible(false), 200);
     }
   }, [isOpen]);
+
+  // Reset form when event changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const initialValues = getInitialValues();
+      reset(initialValues);
+
+      // Set add-ons if in update mode
+      if (isUpdateMode && event?.add_ons && Array.isArray(event.add_ons)) {
+        const transformedAddOns = event.add_ons.map(addon => ({
+          name: addon.name || '',
+          price: typeof addon.price === 'number' ? addon.price : parseFloat(addon.price) || 0,
+          quantity:
+            typeof addon.quantity === 'number' ? addon.quantity : parseInt(addon.quantity) || 1,
+          total_price:
+            (typeof addon.price === 'number' ? addon.price : parseFloat(addon.price) || 0) *
+            (typeof addon.quantity === 'number' ? addon.quantity : parseInt(addon.quantity) || 1),
+        }));
+        setAddOns(transformedAddOns);
+      } else {
+        setAddOns([]);
+      }
+    }
+  }, [isOpen, mode, event?.id, reset, getInitialValues, isUpdateMode, event?.add_ons]);
 
   // Calculate totals when add-ons or package changes
   useEffect(() => {
@@ -81,29 +213,54 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
 
   const onSubmit = async (data: CreateEventFormData) => {
     try {
-      createEvent(data, {
-        onSuccess: () => {
-          addNotification({
-            type: 'success',
-            title: 'Event created successfully!',
-            message: `"${data.name}" has been added to your events.`,
-          });
-          onEventCreated();
-          reset();
-          setAddOns([]);
-          setActiveTab('client');
-        },
-        onError: (error: any) => {
-          addNotification({
-            type: 'error',
-            title: 'Failed to create event',
-            message:
-              error.response?.data?.message || 'Please check your information and try again.',
-          });
-        },
-      });
+      if (isUpdateMode) {
+        // Update event
+        updateEvent(
+          { id: event.id, data },
+          {
+            onSuccess: () => {
+              addNotification({
+                type: 'success',
+                title: 'Event updated successfully!',
+                message: `"${data.name}" has been updated.`,
+              });
+              onEventUpdated?.();
+              onClose();
+            },
+            onError: (error: any) => {
+              addNotification({
+                type: 'error',
+                title: 'Failed to update event',
+                message:
+                  error.response?.data?.message || 'Please check your information and try again.',
+              });
+            },
+          }
+        );
+      } else {
+        // Create event
+        createEvent(data, {
+          onSuccess: () => {
+            addNotification({
+              type: 'success',
+              title: 'Event created successfully!',
+              message: `"${data.name}" has been added to your events.`,
+            });
+            onEventCreated?.();
+            onClose();
+          },
+          onError: (error: any) => {
+            addNotification({
+              type: 'error',
+              title: 'Failed to create event',
+              message:
+                error.response?.data?.message || 'Please check your information and try again.',
+            });
+          },
+        });
+      }
     } catch (error) {
-      console.error('Failed to create event:', error);
+      console.error(`Failed to ${isUpdateMode ? 'update' : 'create'} event:`, error);
     }
   };
 
@@ -141,9 +298,14 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
 
   const handleClose = () => {
     if (isPending) return;
-    reset();
+
+    // Reset form and state
+    reset(defaultEventFormValues);
     setAddOns([]);
     setActiveTab('client');
+    setIsAnimating(false);
+
+    // Close modal
     onClose();
   };
 
@@ -184,7 +346,9 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
 
           <div className="flex justify-between items-center mt-2 sm:mt-0">
             <div className="flex-1">
-              <h2 className="text-lg sm:text-2xl font-bold text-secondary">Create New Event</h2>
+              <h2 className="text-lg sm:text-2xl font-bold text-secondary">
+                {isUpdateMode ? 'Update Event' : 'Create New Event'}
+              </h2>
               {/* Mobile progress indicator */}
               <div className="sm:hidden mt-2">
                 <div className="text-xs text-gray-500">
@@ -213,13 +377,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
                   : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
@@ -336,13 +494,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
                       disabled={isPending}
                       className="flex items-center space-x-2 px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <ArrowLeft className="w-4 h-4" />
                       <span>Previous</span>
                     </button>
                   ) : (
@@ -362,13 +514,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
                       className="flex items-center space-x-2 px-4 py-2 bg-brand hover:bg-brand-dark text-secondary rounded-lg transition-colors duration-200 font-medium"
                     >
                       <span>Next</span>
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
                     <div></div>
@@ -391,7 +537,13 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
                     disabled={isPending}
                     className="flex-1 py-3 bg-brand hover:bg-brand-dark disabled:bg-gray-400 text-secondary font-semibold rounded-lg transition-colors duration-200"
                   >
-                    {isPending ? 'Creating...' : 'Create Event'}
+                    {isPending
+                      ? isUpdateMode
+                        ? 'Updating...'
+                        : 'Creating...'
+                      : isUpdateMode
+                        ? 'Update Event'
+                        : 'Create Event'}
                   </button>
                 </div>
               </div>
@@ -452,7 +604,13 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
                   disabled={isPending}
                   className="px-6 py-2 bg-brand hover:bg-brand-dark disabled:bg-gray-400 text-secondary font-semibold rounded-lg transition-colors duration-200"
                 >
-                  {isPending ? 'Creating...' : 'Create Event'}
+                  {isPending
+                    ? isUpdateMode
+                      ? 'Updating...'
+                      : 'Creating...'
+                    : isUpdateMode
+                      ? 'Update Event'
+                      : 'Create Event'}
                 </button>
               </div>
             </div>
@@ -463,4 +621,4 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
   );
 };
 
-export default CreateEventModal;
+export default EventModal;

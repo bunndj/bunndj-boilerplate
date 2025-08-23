@@ -1,5 +1,6 @@
-import { useAuth, useDashboardStats } from '@/hooks';
 import { Link } from 'react-router-dom';
+import { Plus, User, MessageCircle } from 'lucide-react';
+import { useAuth, useDashboardStats } from '@/hooks';
 
 function Dashboard() {
   const { user } = useAuth();
@@ -96,13 +97,7 @@ function Dashboard() {
                 className="flex flex-col items-center justify-center bg-brand hover:bg-brand-dark text-secondary font-medium py-4 sm:py-6 px-3 sm:px-4 rounded-lg transition-all duration-300 group hover-lift animate-glow hover:scale-105"
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary/20 rounded-full flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300 animate-bounce-subtle">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <span className="text-sm sm:text-base">Create Event</span>
               </Link>
@@ -111,13 +106,7 @@ function Dashboard() {
                 className="flex flex-col items-center justify-center bg-secondary hover:bg-secondary-light text-white font-medium py-4 sm:py-6 px-3 sm:px-4 rounded-lg transition-all duration-300 group hover-lift animation-delay-100 hover:scale-105"
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 animate-float">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <User className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <span className="text-sm sm:text-base">Update Profile</span>
               </Link>
@@ -126,13 +115,7 @@ function Dashboard() {
                 className="flex flex-col items-center justify-center bg-brand/20 hover:bg-brand/30 text-secondary font-medium py-4 sm:py-6 px-3 sm:px-4 rounded-lg transition-all duration-300 group sm:col-span-2 lg:col-span-1 hover-lift animation-delay-200 hover:scale-105"
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand/30 rounded-full flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300 animate-pulse-slow">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <span className="text-sm sm:text-base">Contact Us</span>
               </Link>
