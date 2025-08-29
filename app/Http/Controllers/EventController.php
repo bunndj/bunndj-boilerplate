@@ -11,6 +11,95 @@ use Illuminate\Validation\ValidationException;
 class EventController extends Controller
 {
     /**
+     * Get validation rules for event data.
+     */
+    private function getValidationRules(bool $isUpdate = false): array
+    {
+        $requiredRule = $isUpdate ? 'required' : 'required';
+        
+        return [
+            'name' => "{$requiredRule}|string|max:255",
+            'event_date' => "{$requiredRule}|date|after_or_equal:today",
+            'setup_time' => "{$requiredRule}|date_format:H:i",
+            'start_time' => "{$requiredRule}|date_format:H:i",
+            'end_time' => "{$requiredRule}|date_format:H:i|after_or_equal:start_time",
+            'service_package' => "{$requiredRule}|string|max:255",
+            'service_description' => 'nullable|string',
+            'guest_count' => "{$requiredRule}|integer|min:1",
+            
+            // Venue fields
+            'venue_name' => 'nullable|string|max:255',
+            'venue_address' => 'nullable|string|max:255',
+            'venue_city' => 'nullable|string|max:100',
+            'venue_state' => 'nullable|string|max:2',
+            'venue_zipcode' => 'nullable|string|max:10',
+            'venue_phone' => 'nullable|string|max:20',
+            'venue_email' => 'nullable|email|max:255',
+            
+            // Client information fields
+            'client_firstname' => 'nullable|string|max:255',
+            'client_lastname' => 'nullable|string|max:255',
+            'client_organization' => 'nullable|string|max:255',
+            'client_cell_phone' => 'nullable|string|max:20',
+            'client_home_phone' => 'nullable|string|max:20',
+            'client_email' => 'nullable|email|max:255',
+            'client_address' => 'nullable|string|max:255',
+            'client_address_line2' => 'nullable|string|max:255',
+            'client_city' => "{$requiredRule}|string|max:100",
+            'client_state' => "{$requiredRule}|string|max:2",
+            'client_zipcode' => "{$requiredRule}|string|max:10",
+            
+            // Custom client fields
+            'partner_name' => 'nullable|string|max:255',
+            'partner_email' => 'nullable|email|max:255',
+            'mob_fog' => 'nullable|string|max:255',
+            'mob_fog_email' => 'nullable|email|max:255',
+            'other_contact' => 'nullable|string|max:255',
+            'poc_email_phone' => 'nullable|string|max:255',
+            'vibo_link' => 'nullable|url|max:255',
+            
+            // Financial fields
+            'package' => "{$requiredRule}|numeric|min:0",
+            'add_ons' => 'nullable|array',
+            'add_ons.*.name' => 'required_with:add_ons|string|max:255',
+            'add_ons.*.price' => 'required_with:add_ons|numeric|min:0',
+            'add_ons.*.quantity' => 'required_with:add_ons|integer|min:1',
+            'deposit_value' => 'nullable|numeric|min:0',
+        ];
+    }
+
+    /**
+     * Validate and prepare event data.
+     */
+    private function validateAndPrepareEventData(Request $request, bool $isUpdate = false): array
+    {
+        $validator = Validator::make($request->all(), $this->getValidationRules($isUpdate));
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $validatedData = $validator->validated();
+
+        // Convert time strings to full datetime for the event date
+        $eventDate = $validatedData['event_date'];
+        $validatedData['setup_time'] = $eventDate . ' ' . $validatedData['setup_time'] . ':00';
+        $validatedData['start_time'] = $eventDate . ' ' . $validatedData['start_time'] . ':00';
+        $validatedData['end_time'] = $eventDate . ' ' . $validatedData['end_time'] . ':00';
+
+        return $validatedData;
+    }
+
+    /**
+     * Check if user owns the event.
+     */
+    private function authorizeEventAccess(Event $event, $userId): void
+    {
+        if ($event->dj_id !== $userId) {
+            abort(403, 'Unauthorized access to this event.');
+        }
+    }
+    /**
      * Display a listing of events for the authenticated user.
      */
     public function index(Request $request): JsonResponse
@@ -42,77 +131,10 @@ class EventController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
-
-            // Validation rules matching the frontend Zod schema
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'event_date' => 'required|date|after_or_equal:today',
-                'setup_time' => 'required|date_format:H:i',
-                'start_time' => 'required|date_format:H:i',
-                'end_time' => 'required|date_format:H:i|after_or_equal:start_time',
-                'service_package' => 'required|string|max:255',
-                'service_description' => 'nullable|string',
-                'guest_count' => 'required|integer|min:1',
-                
-                // Venue fields
-                'venue_name' => 'nullable|string|max:255',
-                'venue_address' => 'nullable|string|max:255',
-                'venue_city' => 'nullable|string|max:100',
-                'venue_state' => 'nullable|string|max:2',
-                'venue_zipcode' => 'nullable|string|max:10',
-                'venue_phone' => 'nullable|string|max:20',
-                'venue_email' => 'nullable|email|max:255',
-                
-                // Client information fields
-                'client_firstname' => 'nullable|string|max:255',
-                'client_lastname' => 'nullable|string|max:255',
-                'client_organization' => 'nullable|string|max:255',
-                'client_cell_phone' => 'nullable|string|max:20',
-                'client_home_phone' => 'nullable|string|max:20',
-                'client_email' => 'nullable|email|max:255',
-                'client_address' => 'nullable|string|max:255',
-                'client_address_line2' => 'nullable|string|max:255',
-                'client_city' => 'required|string|max:100',
-                'client_state' => 'required|string|max:2',
-                'client_zipcode' => 'required|string|max:10',
-                
-                // Custom client fields
-                'partner_name' => 'nullable|string|max:255',
-                'partner_email' => 'nullable|email|max:255',
-                'mob_fog' => 'nullable|string|max:255',
-                'mob_fog_email' => 'nullable|email|max:255',
-                'other_contact' => 'nullable|string|max:255',
-                'poc_email_phone' => 'nullable|string|max:255',
-                'vibo_link' => 'nullable|url|max:255',
-                
-                // Financial fields
-                'package' => 'required|numeric|min:0',
-                'add_ons' => 'nullable|array',
-                'add_ons.*.name' => 'required_with:add_ons|string|max:255',
-                'add_ons.*.price' => 'required_with:add_ons|numeric|min:0',
-                'add_ons.*.quantity' => 'required_with:add_ons|integer|min:1',
-                'deposit_value' => 'nullable|numeric|min:0',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed.',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $validatedData = $validator->validated();
+            $validatedData = $this->validateAndPrepareEventData($request);
             
             // Add the authenticated user's ID as the DJ
-            $validatedData['dj_id'] = $user->id;
-
-            // Convert time strings to full datetime for the event date
-            $eventDate = $validatedData['event_date'];
-            $validatedData['setup_time'] = $eventDate . ' ' . $validatedData['setup_time'] . ':00';
-            $validatedData['start_time'] = $eventDate . ' ' . $validatedData['start_time'] . ':00';
-            $validatedData['end_time'] = $eventDate . ' ' . $validatedData['end_time'] . ':00';
+            $validatedData['dj_id'] = $request->user()->id;
 
             // Create the event
             $event = Event::create($validatedData);
@@ -144,15 +166,7 @@ class EventController extends Controller
     public function show(Request $request, Event $event): JsonResponse
     {
         try {
-            $user = $request->user();
-
-            // Ensure the event belongs to the authenticated user
-            if ($event->dj_id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access to this event.'
-                ], 403);
-            }
+            $this->authorizeEventAccess($event, $request->user()->id);
 
             return response()->json([
                 'success' => true,
@@ -173,58 +187,9 @@ class EventController extends Controller
     public function update(Request $request, Event $event): JsonResponse
     {
         try {
-            $user = $request->user();
-
-            // Ensure the event belongs to the authenticated user
-            if ($event->dj_id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access to this event.'
-                ], 403);
-            }
-
-            // Validation rules
-            $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|required|string|max:255',
-                'event_date' => 'sometimes|required|date|after_or_equal:today',
-                'setup_time' => 'sometimes|required|date_format:H:i',
-                'start_time' => 'sometimes|required|date_format:H:i',
-                'end_time' => 'sometimes|required|date_format:H:i|after_or_equal:start_time',
-                'service_package' => 'sometimes|required|string|max:255',
-                'service_description' => 'nullable|string',
-                'guest_count' => 'sometimes|required|integer|min:1',
-                'venue_name' => 'sometimes|nullable|string|max:255',
-                'venue_address' => 'sometimes|nullable|string|max:255',
-                'venue_city' => 'sometimes|nullable|string|max:100',
-                'venue_state' => 'sometimes|nullable|string|max:2',
-                'venue_zipcode' => 'sometimes|nullable|string|max:10',
-                'venue_phone' => 'nullable|string|max:20',
-                'venue_email' => 'nullable|email|max:255',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed.',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $validatedData = $validator->validated();
-
-            // Convert time strings to full datetime if provided
-            if (isset($validatedData['event_date'])) {
-                $eventDate = $validatedData['event_date'];
-                if (isset($validatedData['setup_time'])) {
-                    $validatedData['setup_time'] = $eventDate . ' ' . $validatedData['setup_time'] . ':00';
-                }
-                if (isset($validatedData['start_time'])) {
-                    $validatedData['start_time'] = $eventDate . ' ' . $validatedData['start_time'] . ':00';
-                }
-                if (isset($validatedData['end_time'])) {
-                    $validatedData['end_time'] = $eventDate . ' ' . $validatedData['end_time'] . ':00';
-                }
-            }
+            $this->authorizeEventAccess($event, $request->user()->id);
+            
+            $validatedData = $this->validateAndPrepareEventData($request, true);
 
             // Update the event
             $event->update($validatedData);
@@ -256,15 +221,7 @@ class EventController extends Controller
     public function destroy(Request $request, Event $event): JsonResponse
     {
         try {
-            $user = $request->user();
-
-            // Ensure the event belongs to the authenticated user
-            if ($event->dj_id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access to this event.'
-                ], 403);
-            }
+            $this->authorizeEventAccess($event, $request->user()->id);
 
             $event->delete();
 
