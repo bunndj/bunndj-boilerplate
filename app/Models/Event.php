@@ -108,6 +108,14 @@ class Event extends Model
     }
 
     /**
+     * Get timeline for this event (one-to-one)
+     */
+    public function timeline()
+    {
+        return $this->hasOne(EventTimeline::class);
+    }
+
+    /**
      * Get the full venue address
      */
     public function getFullVenueAddressAttribute(): string
