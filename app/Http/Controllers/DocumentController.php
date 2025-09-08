@@ -221,17 +221,57 @@ class DocumentController extends Controller
     private function parsePdfContent(string $filePath): string
     {
         try {
-            return (new Pdf())
+            $rawText = (new Pdf())
                 ->setPdf($filePath)
                 ->setOptions([
                     'layout', // Maintain layout
                     'raw',    // Raw text output
                 ])
                 ->text();
+            
+            // Clean and ensure valid UTF-8 encoding
+            return $this->cleanUtf8Text($rawText);
+            
         } catch (Exception $e) {
             Log::error('PDF parsing error: ' . $e->getMessage());
             throw new Exception('Failed to parse PDF content: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Clean and ensure valid UTF-8 text
+     */
+    private function cleanUtf8Text(string $text): string
+    {
+        // Remove or replace invalid UTF-8 characters
+        $cleanText = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Remove null bytes and other problematic characters
+        $cleanText = str_replace(["\0", "\x00"], '', $cleanText);
+        
+        // Remove or replace non-printable characters except newlines, tabs, and carriage returns
+        $cleanText = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $cleanText);
+        
+        // Normalize line endings
+        $cleanText = str_replace(["\r\n", "\r"], "\n", $cleanText);
+        
+        // Remove excessive whitespace while preserving structure
+        $cleanText = preg_replace('/\n{3,}/', "\n\n", $cleanText);
+        
+        // Ensure the result is valid UTF-8
+        if (!mb_check_encoding($cleanText, 'UTF-8')) {
+            // Fallback: force UTF-8 conversion and remove invalid sequences
+            $cleanText = mb_convert_encoding($cleanText, 'UTF-8', 'UTF-8');
+            $cleanText = filter_var($cleanText, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
+        }
+        
+        Log::info('Text cleaned for UTF-8 compliance', [
+            'original_length' => strlen($text),
+            'cleaned_length' => strlen($cleanText),
+            'is_valid_utf8' => mb_check_encoding($cleanText, 'UTF-8')
+        ]);
+        
+        return trim($cleanText);
     }
 
     /**
@@ -249,6 +289,27 @@ class DocumentController extends Controller
 
             $systemPrompt = $this->getSystemPrompt();
             $userPrompt = $this->getUserPrompt($content);
+
+            // Validate that the content can be JSON encoded before sending to OpenAI
+            $testPayload = [
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $userPrompt]
+                ]
+            ];
+            
+            $jsonTest = json_encode($testPayload);
+            if ($jsonTest === false) {
+                $jsonError = json_last_error_msg();
+                Log::error('JSON encoding failed for OpenAI payload', [
+                    'json_error' => $jsonError,
+                    'content_length' => strlen($content),
+                    'system_prompt_length' => strlen($systemPrompt),
+                    'user_prompt_length' => strlen($userPrompt)
+                ]);
+                throw new Exception("JSON encoding failed: {$jsonError}");
+            }
 
             $timeout = config('services.openai.timeout', 300);
             $connectTimeout = config('services.openai.connect_timeout', 30);
@@ -453,11 +514,21 @@ Return ONLY the JSON object with these exact field names.";
      */
     private function getUserPrompt(string $content): string
     {
+        // Ensure content is clean and truncate safely to avoid UTF-8 issues
+        $cleanContent = $this->cleanUtf8Text($content);
+        $truncatedContent = mb_substr($cleanContent, 0, 8000, 'UTF-8');
+        
+        // Verify the truncated content is still valid UTF-8
+        if (!mb_check_encoding($truncatedContent, 'UTF-8')) {
+            Log::warning('Truncated content has UTF-8 issues, applying additional cleaning');
+            $truncatedContent = mb_convert_encoding($truncatedContent, 'UTF-8', 'UTF-8');
+        }
+        
         return "Please analyze this event planning document and extract all the relevant information into the specified JSON format. The document may be structured in various ways (lists, paragraphs, notes, etc.) - analyze the entire content intelligently.
 
 Here's the document content:
 
-" . substr($content, 0, 8000) . "
+" . $truncatedContent . "
 
 Extract all the information you can find and return it in the exact JSON format specified in the system prompt. Be thorough and look for information in any format or location within the document.";
     }
