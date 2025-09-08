@@ -127,7 +127,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🎉 Wedding Event Invitation</h1>
+            <h1>Wedding Event Invitation</h1>
             <p>You've been invited to join a special wedding event!</p>
         </div>
 
@@ -139,7 +139,7 @@
 
             <!-- Event Details -->
             <div class="event-details">
-                <h3>📅 Event Information</h3>
+                <h3>Event Information</h3>
                 <div class="detail-row">
                     <span class="detail-label">Event Name:</span>
                     <span class="detail-value"><strong>{{ $event->name }}</strong></span>
@@ -164,7 +164,7 @@
 
             <!-- DJ Information -->
             <div class="dj-info">
-                <h3>🎵 Your DJ</h3>
+                <h3>Your DJ</h3>
                 <p><strong>{{ $dj->name }}</strong><br>
                 {{ $dj->organization }}</p>
                 <p>Your DJ is ready to work with you to create the perfect musical experience for your special day!</p>
@@ -179,7 +179,7 @@
 
             <!-- Expiry Notice -->
             <div class="expiry-notice">
-                <strong>⏰ Important:</strong> This invitation will expire on {{ \Carbon\Carbon::parse($invitation->expires_at)->format('F j, Y \a\t g:i A') }}. Please accept it before then to join the event planning.
+                <strong>Important:</strong> This invitation will expire on {{ \Carbon\Carbon::parse($invitation->expires_at)->format('F j, Y \a\t g:i A') }}. Please accept it before then to join the event planning.
             </div>
 
             <p>Once you accept the invitation, you'll be able to:</p>
