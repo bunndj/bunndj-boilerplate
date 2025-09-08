@@ -293,10 +293,10 @@ function SignUp() {
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
                   <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                  Creating Your DJ Account...
+                  Creating Your Account...
                 </div>
               ) : (
-                'Start Your DJ Journey'
+                'Start Your Journey'
               )}
             </button>
           </form>

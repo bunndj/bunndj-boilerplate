@@ -12,15 +12,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add 'client' role to the users_role_enum
-        try {
-            DB::statement("ALTER TYPE users_role_enum ADD VALUE 'client'");
-        } catch (Exception $e) {
-            // If the value already exists, ignore the error
-            if (strpos($e->getMessage(), 'already exists') === false) {
-                throw $e;
-            }
-        }
+        // For PostgreSQL, we need to handle enum changes differently
+        // First, add a temporary column
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('role_new', ['admin', 'dj', 'client'])->default('dj')->after('role');
+        });
+
+        // Copy data from old column to new column
+        DB::statement('UPDATE users SET role_new = role::text');
+
+        // Drop the old column
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
+        });
+
+        // Rename the new column to the original name
+        Schema::table('users', function (Blueprint $table) {
+            $table->renameColumn('role_new', 'role');
+        });
     }
 
     /**
@@ -28,8 +37,22 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Note: PostgreSQL doesn't support removing enum values easily
-        // This would require recreating the enum type and updating all references
-        // For now, we'll leave the 'client' value in place
+        // Reverse the process: create temp column with old enum values
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('role_old', ['admin', 'dj'])->default('dj')->after('role');
+        });
+
+        // Copy data, but only admin and dj roles
+        DB::statement("UPDATE users SET role_old = role::text WHERE role IN ('admin', 'dj')");
+
+        // Drop the current column
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
+        });
+
+        // Rename back
+        Schema::table('users', function (Blueprint $table) {
+            $table->renameColumn('role_old', 'role');
+        });
     }
 };
