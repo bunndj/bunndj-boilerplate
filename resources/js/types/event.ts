@@ -103,6 +103,24 @@ export interface Event {
   add_ons?: AddOnItem[];
   deposit_value?: number;
 
+  // Invitation information
+  invitations?: Invitation[];
+
+  created_at: string;
+  updated_at: string;
+}
+
+// Invitation data structure
+export interface Invitation {
+  id: number;
+  token: string;
+  event_id: number;
+  dj_id: number;
+  client_email: string;
+  client_name: string;
+  status: 'pending' | 'accepted' | 'expired';
+  expires_at: string;
+  accepted_at?: string;
   created_at: string;
   updated_at: string;
 }

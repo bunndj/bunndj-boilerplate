@@ -218,11 +218,23 @@ const EventModal: React.FC<EventModalProps> = ({
         updateEvent(
           { id: event.id, data },
           {
-            onSuccess: () => {
+            onSuccess: (response: any) => {
+              // Check if email was changed and invitation was sent
+              const emailChanged = response?.data?.email_changed;
+              const invitation = response?.data?.invitation;
+              
+              let notificationMessage = `"${data.name}" has been updated.`;
+              
+              if (emailChanged && invitation) {
+                notificationMessage += ' The invitation has been updated and sent to the new client email.';
+              } else if (emailChanged) {
+                notificationMessage += ' Client email has been updated.';
+              }
+
               addNotification({
                 type: 'success',
                 title: 'Event updated successfully!',
-                message: `"${data.name}" has been updated.`,
+                message: notificationMessage,
               });
               onEventUpdated?.();
               onClose();
@@ -374,7 +386,7 @@ const EventModal: React.FC<EventModalProps> = ({
               className={`p-2 rounded-full transition-colors ml-4 ${
                 isPending
                   ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-400 hover:text-gray-300 hover:bg-gray-100'
               }`}
             >
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -390,7 +402,7 @@ const EventModal: React.FC<EventModalProps> = ({
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'bg-brand text-secondary'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                    : 'text-gray-300 hover:text-gray-800 hover:bg-gray-100'
                 }`}
               >
                 <span className="text-base">{tab.icon}</span>
@@ -424,7 +436,7 @@ const EventModal: React.FC<EventModalProps> = ({
                     className={`relative p-2 rounded-lg transition-colors ${
                       activeTab === tab.id
                         ? 'bg-brand text-secondary'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-gray-100 text-gray-300 hover:bg-gray-200'
                     }`}
                   >
                     <span className="text-lg">{tab.icon}</span>
@@ -492,7 +504,7 @@ const EventModal: React.FC<EventModalProps> = ({
                         }
                       }}
                       disabled={isPending}
-                      className="flex items-center space-x-2 px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-300 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Previous</span>
@@ -563,7 +575,7 @@ const EventModal: React.FC<EventModalProps> = ({
                       }
                     }}
                     disabled={isPending}
-                    className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                    className="px-4 py-2 text-gray-300 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
                   >
                     Previous
                   </button>

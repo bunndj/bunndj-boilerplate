@@ -176,7 +176,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                         <button
                           onClick={() => moveItem(item.id, 'up')}
                           disabled={index === 0}
-                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="p-1 text-gray-400 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Move up"
                         >
                           <ChevronUp className="w-3 h-3" />
@@ -184,7 +184,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                         <button
                           onClick={() => moveItem(item.id, 'down')}
                           disabled={index === formData.timeline_items.length - 1}
-                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="p-1 text-gray-400 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Move down"
                         >
                           <ChevronDown className="w-3 h-3" />
@@ -287,7 +287,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                           <button
                             onClick={() => moveItem(item.id, 'up')}
                             disabled={index === 0}
-                            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1 text-gray-400 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Move up"
                           >
                             <ChevronUp className="w-4 h-4" />
@@ -295,7 +295,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({ onSave, initialData = {} })
                           <button
                             onClick={() => moveItem(item.id, 'down')}
                             disabled={index === formData.timeline_items.length - 1}
-                            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1 text-gray-400 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Move down"
                           >
                             <ChevronDown className="w-4 h-4" />

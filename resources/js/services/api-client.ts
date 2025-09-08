@@ -28,7 +28,7 @@ export const setAuthToken = (token: string | null) => {
     } else {
       // Remove Authorization header
       delete apiClient.defaults.headers.common['Authorization'];
-      authStorage.clearAuth();
+      authStorage.removeToken();
     }
   } catch (error) {
     console.error('Error managing auth token:', error);
@@ -69,8 +69,11 @@ window.addEventListener('storage', e => {
 apiClient.interceptors.response.use(
   response => response,
   error => {
+    // Don't clear auth data for logout requests
+    const isLogoutRequest = error.config?.url?.includes('/logout');
+    
     // Handle different types of authentication errors
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isLogoutRequest) {
       // Clear token and user data
       setAuthToken(null);
 
@@ -81,6 +84,25 @@ apiClient.interceptors.response.use(
       if (!isPublicPage) {
         // Redirect to signin page
         window.location.href = '/signin';
+      }
+    } else if (error.response?.status === 403 && !isLogoutRequest) {
+      // Handle inactive account - clear auth and redirect to signin
+      const errorMessage = error.response?.data?.message;
+      if (errorMessage && errorMessage.includes('deactivated')) {
+        // Clear token and user data
+        setAuthToken(null);
+        authStorage.removeUser();
+
+        // Only redirect if we're not already on a public page
+        const publicRoutes = ['/signin', '/signup'];
+        const isPublicPage = publicRoutes.includes(window.location.pathname);
+
+        if (!isPublicPage) {
+          // Store the error message for display on signin page
+          sessionStorage.setItem('auth_error', errorMessage);
+          // Redirect to signin page
+          window.location.href = '/signin';
+        }
       }
     } else if (error.response?.status === 419) {
       // CSRF token mismatch - refresh the page to get new token

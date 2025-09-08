@@ -9,4 +9,5 @@ export { dashboardService } from './dashboard';
 export { contactService } from './contact';
 export { profileService } from './profile';
 export { documentService } from './document';
-export { default as apiClient, addAuthToken } from './api-client';
+export { invitationService } from './invitation';
+export { default as apiClient, addAuthToken, setAuthToken } from './api-client';

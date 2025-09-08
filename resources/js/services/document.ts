@@ -35,9 +35,22 @@ export interface GetEventDocumentsResponse {
   data: EventDocument[];
 }
 
+export interface NotesParseResponse {
+  success: boolean;
+  message: string;
+  data: {
+    extracted_fields: Record<string, any>;
+    confidence_score: number;
+    raw_text: string;
+    analysis_timestamp: string;
+    ai_model: string;
+    ai_response: string;
+  };
+}
+
 class DocumentService {
   /**
-   * Upload and parse a document
+   * Upload and parse a document (for DJ/Admin users)
    */
   async uploadAndParse(
     eventId: number,
@@ -59,10 +72,54 @@ class DocumentService {
   }
 
   /**
+   * Upload and parse a document (for Client users)
+   */
+  async uploadAndParseForClient(
+    eventId: number,
+    file: File,
+    documentType: 'pdf' | 'email' | 'note'
+  ): Promise<DocumentUploadResponse> {
+    const formData = new FormData();
+    formData.append('event_id', eventId.toString());
+    formData.append('document', file);
+    formData.append('document_type', documentType);
+
+    const response = await apiClient.post(`/client/events/${eventId}/documents/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  }
+
+  /**
    * Get all documents for an event
    */
   async getEventDocuments(eventId: number): Promise<GetEventDocumentsResponse> {
     const response = await apiClient.get(`/events/${eventId}/documents`);
+    return response.data;
+  }
+
+  /**
+   * Parse notes text using AI (for DJ/Admin users)
+   */
+  async parseNotes(eventId: number, notes: string): Promise<NotesParseResponse> {
+    const response = await apiClient.post(`/events/${eventId}/documents/parse-notes`, {
+      event_id: eventId,
+      notes: notes,
+    });
+    return response.data;
+  }
+
+  /**
+   * Parse notes text using AI (for Client users)
+   */
+  async parseNotesForClient(eventId: number, notes: string): Promise<NotesParseResponse> {
+    const response = await apiClient.post(`/client/events/${eventId}/documents/parse-notes`, {
+      event_id: eventId,
+      notes: notes,
+    });
     return response.data;
   }
 

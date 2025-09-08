@@ -15,15 +15,39 @@ class EventMusicIdeasController extends Controller
      */
     public function show(Event $event): JsonResponse
     {
+        \Log::info('=== MUSIC IDEAS SHOW DEBUG ===');
+        \Log::info('Music ideas show method called', [
+            'event_id' => $event->id,
+            'event_name' => $event->name,
+            'user_authenticated' => auth()->check(),
+            'user_id' => auth()->id(),
+            'user_role' => auth()->user()?->role,
+            'user_email' => auth()->user()?->email
+        ]);
+
         $musicIdeas = $event->musicIdeas;
         
+        \Log::info('Music ideas data', [
+            'event_id' => $event->id,
+            'has_music_ideas' => $musicIdeas ? 'Yes' : 'No',
+            'music_ideas_id' => $musicIdeas?->id
+        ]);
+        
         if (!$musicIdeas) {
+            \Log::info('No music ideas found for event', ['event_id' => $event->id]);
             return response()->json([
                 'music_ideas' => null,
                 'notes' => null,
                 'total_songs' => 0
             ]);
         }
+
+        \Log::info('Music ideas found', [
+            'event_id' => $event->id,
+            'total_songs' => $musicIdeas->getTotalSongCount(),
+            'has_notes' => $musicIdeas->notes ? 'Yes' : 'No'
+        ]);
+        \Log::info('=== END MUSIC IDEAS SHOW DEBUG ===');
 
         return response()->json([
             'music_ideas' => $musicIdeas->music_ideas,

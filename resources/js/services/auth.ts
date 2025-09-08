@@ -4,8 +4,15 @@ import type { AuthResponse, LoginCredentials, RegisterCredentials, User } from '
 export const authService = {
   // Register new user
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post('/register', credentials);
-    return response.data;
+    if (credentials.invitation_id) {
+      // Use invitation-based registration endpoint
+      const response = await apiClient.post(`/register/invitation/${credentials.invitation_id}`, credentials);
+      return response.data;
+    } else {
+      // Use regular registration endpoint
+      const response = await apiClient.post('/register', credentials);
+      return response.data;
+    }
   },
 
   // Login user

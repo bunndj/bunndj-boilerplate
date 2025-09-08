@@ -1,3 +1,5 @@
+import { Role, Permission } from '@/constants/roles';
+
 // Authentication related types
 export interface User {
   id: number;
@@ -15,7 +17,7 @@ export interface User {
   city?: string;
   state?: string;
   zipcode?: string;
-  role: 'admin' | 'dj';
+  role: Role;
   sms_consent: boolean;
   is_active: boolean;
   email_verified_at?: string;
@@ -42,6 +44,34 @@ export interface RegisterCredentials {
   password_confirmation: string;
   organization?: string;
   phone?: string;
+  role?: string;
+  invitation_id?: number;
+}
+
+export interface RoleHelpers {
+  isAdmin: boolean;
+  isDj: boolean;
+  isClient: boolean;
+  role: Role | null;
+  permissions: Permission[];
+  hasPermission: (permission: Permission) => boolean;
+  canCreateEvents: boolean;
+  canEditEvents: boolean;
+  canDeleteEvents: boolean;
+  canViewAllEvents: boolean;
+  canViewOwnEvents: boolean;
+  canViewInvitedEvents: boolean;
+  canManageUsers: boolean;
+  canViewAllUsers: boolean;
+  canEditUsers: boolean;
+  canDeleteUsers: boolean;
+  canEditPlanning: boolean;
+  canViewPlanning: boolean;
+  canUploadDocuments: boolean;
+  canUseChat: boolean;
+  canSendInvitations: boolean;
+  canViewDashboard: boolean;
+  canManageSystem: boolean;
 }
 
 export interface AuthContextType {
@@ -57,10 +87,36 @@ export interface AuthContextType {
     password: string,
     password_confirmation: string,
     organization?: string,
-    phone?: string
+    phone?: string,
+    role?: string,
+    invitationId?: number
   ) => Promise<void>;
   logout: () => Promise<void>;
   clearAuth: () => void;
   updateUser: (userData: User) => void;
   setAuth: (userData: User, token: string) => void;
+  // Role-based helpers
+  isAdmin: boolean;
+  isDj: boolean;
+  isClient: boolean;
+  role: Role | null;
+  permissions: Permission[];
+  hasPermission: (permission: Permission) => boolean;
+  canCreateEvents: boolean;
+  canEditEvents: boolean;
+  canDeleteEvents: boolean;
+  canViewAllEvents: boolean;
+  canViewOwnEvents: boolean;
+  canViewInvitedEvents: boolean;
+  canManageUsers: boolean;
+  canViewAllUsers: boolean;
+  canEditUsers: boolean;
+  canDeleteUsers: boolean;
+  canEditPlanning: boolean;
+  canViewPlanning: boolean;
+  canUploadDocuments: boolean;
+  canUseChat: boolean;
+  canSendInvitations: boolean;
+  canViewDashboard: boolean;
+  canManageSystem: boolean;
 }

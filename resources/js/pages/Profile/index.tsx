@@ -72,7 +72,7 @@ function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="bg-secondary">
       <main className="max-w-4xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         <div className="space-y-4 sm:space-y-6">
           {/* Header */}
@@ -159,7 +159,7 @@ function Profile() {
                 {/* Username (Read-only) */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-secondary">Username</label>
-                  <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600">
+                  <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-300">
                     {user?.username || 'Not provided'}
                   </div>
                 </div>
@@ -167,7 +167,7 @@ function Profile() {
                 {/* Email Address (Read-only) */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-secondary">Email Address</label>
-                  <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600">
+                  <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-300">
                     {user?.email || 'Not provided'}
                   </div>
                 </div>

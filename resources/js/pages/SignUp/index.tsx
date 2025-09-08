@@ -1,15 +1,19 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Info, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { dashboardRoute } from '@/routes/routeConfig';
 import { registerSchema, type RegisterFormData } from '@/schemas';
 import { PhoneInput } from '@/components/Inputs';
+import { useEffect } from 'react';
 
 function SignUp() {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const invitationId = searchParams.get('invitation_id');
+  const invitationEmail = searchParams.get('email');
   const {
     register,
     handleSubmit,
@@ -21,17 +25,51 @@ function SignUp() {
     resolver: zodResolver(registerSchema),
   });
 
+  // Pre-fill email if coming from invitation
+  useEffect(() => {
+    console.log('🔍 [SignUp] useEffect triggered with:', { invitationId, invitationEmail });
+    if (invitationEmail) {
+      console.log('🔍 [SignUp] Pre-filling email:', invitationEmail);
+      setValue('email', invitationEmail);
+    }
+  }, [invitationEmail, setValue]);
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await registerUser(
-        data.name,
-        data.email,
-        data.username,
-        data.password,
-        data.password_confirmation,
-        data.organization,
-        data.phone
-      );
+      console.log('🔍 [SignUp] Form submission with data:', { 
+        invitationId, 
+        invitationEmail, 
+        email: data.email,
+        name: data.name 
+      });
+      
+      if (invitationId) {
+        console.log('🔍 [SignUp] Registering via invitation with ID:', invitationId);
+        // Register via invitation (client role)
+        await registerUser(
+          data.name,
+          data.email,
+          data.username,
+          data.password,
+          data.password_confirmation,
+          data.organization,
+          data.phone,
+          'client', // Force client role for invitation registration
+          Number(invitationId) // Pass invitation ID
+        );
+      } else {
+        console.log('🔍 [SignUp] Regular registration');
+        // Regular registration (admin/dj role)
+        await registerUser(
+          data.name,
+          data.email,
+          data.username,
+          data.password,
+          data.password_confirmation,
+          data.organization,
+          data.phone
+        );
+      }
       navigate(dashboardRoute);
     } catch (err: any) {
       const errors = err.response?.data?.errors;
@@ -73,9 +111,14 @@ function SignUp() {
                 style={{ aspectRatio: '160/51' }}
               />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">Join DJ Planning Hub</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">
+              {invitationId ? 'Complete Your Registration' : 'Join DJ Planning Hub'}
+            </h1>
             <p className="text-white text-sm sm:text-base">
-              Create your DJ account and start planning amazing events
+              {invitationId 
+                ? 'You\'ve been invited to join a wedding event. Complete your registration to get started.'
+                : 'Create your DJ account and start planning amazing events'
+              }
             </p>
           </div>
 

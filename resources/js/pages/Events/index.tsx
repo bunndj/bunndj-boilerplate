@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import EventModal from '@/components/EventModal';
 import { useEvents } from '@/hooks';
+import { invitationService } from '@/services/invitation';
+import { useNotificationHelpers } from '@/hooks';
 import type { Event } from '@/types';
 import {
   Plus,
@@ -13,11 +15,16 @@ import {
   RefreshCw,
   Loader2,
   ArrowRight,
+  Mail,
+  CheckCircle,
+  XCircle,
+  Clock3,
 } from 'lucide-react';
 
 const Events: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data: events = [], isLoading, error, refetch } = useEvents();
+  const { showSuccess, showError } = useNotificationHelpers();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -58,6 +65,43 @@ const Events: React.FC = () => {
     });
   };
 
+  const getInvitationStatus = (event: Event) => {
+    if (!event.invitations || event.invitations.length === 0) {
+      return null;
+    }
+
+    const invitation = event.invitations[0]; // Get the first invitation
+    const now = new Date();
+    const expiresAt = new Date(invitation.expires_at);
+
+    if (invitation.status === 'accepted') {
+      return { status: 'accepted', text: 'Client joined the event', icon: CheckCircle, color: 'text-green-600 bg-green-100' };
+    } else if (invitation.status === 'expired' || expiresAt < now) {
+      return { status: 'expired', text: 'Expired', icon: XCircle, color: 'text-red-600 bg-red-100' };
+    } else if(invitation.status === 'pending') {
+      return { status: 'pending', text: 'Waiting for Client', icon: Clock3, color: 'text-blue-600 bg-blue-100' };
+    }
+  };
+
+  const handleResendInvitation = async (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event card click
+    
+    if (!event.invitations || event.invitations.length === 0) {
+      return;
+    }
+
+    const invitation = event.invitations[0];
+    
+    try {
+      await invitationService.resendInvitation(invitation.id);
+      showSuccess('Invitation Resent!', 'The invitation email has been sent successfully to the client.');
+      // Refetch events to update the status
+      refetch();
+    } catch (error) {
+      showError('Resend Failed', error instanceof Error ? error.message : 'Failed to resend invitation. Please try again.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-secondary flex items-center justify-center">
@@ -77,7 +121,7 @@ const Events: React.FC = () => {
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
           <h3 className="text-lg font-semibold text-white mb-2">Error Loading Events</h3>
-          <p className="text-gray-300 mb-4">
+          <p className="text-gray-600 mb-4">
             {error instanceof Error ? error.message : 'Failed to load events'}
           </p>
           <button
@@ -144,9 +188,24 @@ const Events: React.FC = () => {
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-2 leading-tight group-hover:text-brand transition-colors duration-200">
                     {event.name}
                   </h3>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize whitespace-nowrap group-hover:bg-brand group-hover:text-secondary transition-colors duration-200">
-                    {event.service_package}
-                  </span>
+                  <div className="flex flex-col items-end space-y-1">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize whitespace-nowrap group-hover:bg-brand group-hover:text-secondary transition-colors duration-200">
+                      {event.service_package}
+                    </span>
+                    {(() => {
+                      const invitationStatus = getInvitationStatus(event);
+                      if (invitationStatus) {
+                        const IconComponent = invitationStatus.icon;
+                        return (
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${invitationStatus.color} flex items-center space-x-1`}>
+                            <IconComponent className="w-3 h-3" />
+                            <span>{invitationStatus.text}</span>
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                 </div>
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center">
@@ -179,6 +238,20 @@ const Events: React.FC = () => {
                       })}
                     </span>
                   </div>
+                  {(() => {
+                    const invitationStatus = getInvitationStatus(event);
+                    if (invitationStatus && invitationStatus.status === 'pending') {
+                      return (
+                        <div className="flex items-center text-blue-600">
+                          <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm font-medium">
+                            Invitation sent to {event.client_email}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
@@ -187,6 +260,22 @@ const Events: React.FC = () => {
                     </span>
                     <ArrowRight className="w-4 h-4 text-brand" />
                   </div>
+                  {(() => {
+                    const invitationStatus = getInvitationStatus(event);
+                    if (invitationStatus && invitationStatus.status === 'expired') {
+                      return (
+                        <div className="mt-2 text-center">
+                          <button
+                            onClick={(e) => handleResendInvitation(event, e)}
+                            className="text-xs text-red-600 hover:text-red-800 font-medium bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors duration-200"
+                          >
+                            Resend Invitation
+                          </button>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             ))}

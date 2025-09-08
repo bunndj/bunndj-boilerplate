@@ -81,6 +81,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is a client
+     */
+    public function isClient(): bool
+    {
+        return $this->role === 'client';
+    }
+
+    /**
      * Get all events created by this DJ
      */
     public function events()
@@ -96,5 +104,46 @@ class User extends Authenticatable
         return $this->hasMany(EventDocument::class, 'uploaded_by');
     }
 
+    /**
+     * Get all invitations sent by this DJ
+     */
+    public function sentInvitations()
+    {
+        return $this->hasMany(Invitation::class, 'dj_id');
+    }
 
+    /**
+     * Get all invitations received by this client
+     */
+    public function receivedInvitations()
+    {
+        return $this->hasMany(Invitation::class, 'client_email', 'email');
+    }
+
+    /**
+     * Get all events this client is invited to
+     */
+    public function invitedEvents()
+    {
+        return $this->hasManyThrough(Event::class, Invitation::class, 'client_email', 'id', 'email', 'event_id')
+                    ->where('invitations.status', 'accepted');
+    }
+
+    /**
+     * Get the DJ for this client (through accepted invitations)
+     */
+    public function assignedDj()
+    {
+        return $this->hasOneThrough(User::class, Invitation::class, 'client_email', 'id', 'email', 'dj_id')
+                    ->where('invitations.status', 'accepted');
+    }
+
+    /**
+     * Get all clients for this DJ (through sent invitations)
+     */
+    public function clients()
+    {
+        return $this->hasManyThrough(User::class, Invitation::class, 'dj_id', 'email', 'id', 'client_email')
+                    ->where('invitations.status', 'accepted');
+    }
 }

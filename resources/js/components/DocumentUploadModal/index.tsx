@@ -8,6 +8,7 @@ interface DocumentUploadModalProps {
   onClose: () => void;
   eventId: number;
   onDocumentProcessed?: (parsedData: any) => void;
+  isClientUser?: boolean;
 }
 
 interface UploadState {
@@ -23,6 +24,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   onClose,
   eventId,
   onDocumentProcessed,
+  isClientUser = false,
 }) => {
   const [uploadState, setUploadState] = useState<UploadState>({
     isUploading: false,
@@ -76,7 +78,9 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       }, 200);
 
       // Upload and parse document
-      const response = await documentService.uploadAndParse(eventId, selectedFile, 'pdf');
+      const response = isClientUser 
+        ? await documentService.uploadAndParseForClient(eventId, selectedFile, 'pdf')
+        : await documentService.uploadAndParse(eventId, selectedFile, 'pdf');
 
       clearInterval(progressInterval);
 
@@ -106,11 +110,13 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           success: true,
         }));
 
-        setParsedData(response.data.parsed_data);
+        // Handle different response structures for client vs DJ/Admin
+        const parsedData = response.data.parsed_data || (response.data as any).ai_analysis;
+        setParsedData(parsedData);
         setShowResults(true);
 
-        const confidenceScore = response.data.parsed_data.confidence_score;
-        const fieldCount = Object.keys(response.data.parsed_data.extracted_fields).length;
+        const confidenceScore = parsedData.confidence_score || 0;
+        const fieldCount = Object.keys(parsedData.extracted_fields || {}).length;
         
         if (confidenceScore > 0) {
           addNotification({
@@ -318,7 +324,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {parsedData?.extracted_fields && Object.entries(parsedData.extracted_fields).map(([key, value]) => (
                       <div key={key} className="flex justify-between">
-                        <span className="text-gray-600 capitalize">
+                        <span className="text-gray-300 capitalize">
                           {key.replace(/([A-Z])/g, ' $1').trim()}:
                         </span>
                         <span className="text-gray-900 font-medium">

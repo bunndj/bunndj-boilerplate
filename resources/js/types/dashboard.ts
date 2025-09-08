@@ -6,4 +6,8 @@ export interface DashboardStats {
   totalEvents: number;
   upcomingEvents: number;
   profileCompletion: number;
+  totalClients?: number;
+  totalUsers?: number;
+  totalDjs?: number;
+  planningCompletion?: number;
 }

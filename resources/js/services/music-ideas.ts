@@ -30,4 +30,22 @@ export const musicIdeasService = {
     });
     return response.data;
   },
+
+  // Client-specific methods
+  getMusicIdeasForClient: async (eventId: number): Promise<MusicIdeasData> => {
+    const response = await apiClient.get(`/client/events/${eventId}/music-ideas`);
+    return response.data;
+  },
+
+  updateMusicIdeasForClient: async (
+    eventId: number,
+    data: MusicIdeasFormData,
+    notes?: string
+  ): Promise<MusicIdeasData> => {
+    const response = await apiClient.put(`/client/events/${eventId}/music-ideas`, {
+      music_ideas: data,
+      notes,
+    });
+    return response.data;
+  },
 };

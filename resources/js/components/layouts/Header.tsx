@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks';
+import { useRole, useAuth } from '@/hooks';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
@@ -8,6 +8,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = () => {
+  const { canViewOwnEvents } = useRole();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,10 +17,18 @@ const Header: React.FC<HeaderProps> = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/signin');
+      
+      // Close mobile menu first
       setIsMobileMenuOpen(false);
+      
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        navigate('/signin');
+      }, 100);
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Header: Logout failed:', error);
+      // Fallback: force navigation even if logout API fails
+      navigate('/signin');
     }
   };
 
@@ -33,7 +42,7 @@ const Header: React.FC<HeaderProps> = () => {
 
   const navigationItems = [
     { path: '/dashboard', label: 'Home' },
-    { path: '/events', label: 'My Events' },
+    ...(canViewOwnEvents ? [{ path: '/events', label: 'My Events' }] : []),
     { path: '/profile', label: 'My Profile' },
     { path: '/contact', label: 'Contact' },
   ];

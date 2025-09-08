@@ -1,15 +1,18 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth, useNotification } from '@/hooks';
 import { dashboardRoute } from '@/routes/routeConfig';
 import { loginSchema, type LoginFormData } from '@/schemas';
+import { useEffect } from 'react';
 
 function SignIn() {
   const { login } = useAuth();
   const { addNotification } = useNotification();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
 
   const {
     register,
@@ -20,16 +23,42 @@ function SignIn() {
     resolver: zodResolver(loginSchema),
   });
 
+  // Check for stored auth error messages (like inactive account)
+  useEffect(() => {
+    const authError = sessionStorage.getItem('auth_error');
+    if (authError) {
+      addNotification({
+        type: 'error',
+        title: 'Account Access Restricted',
+        message: authError,
+      });
+      // Clear the stored error message
+      sessionStorage.removeItem('auth_error');
+    }
+  }, [addNotification]);
+
   const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log('🔍 [SignIn] Attempting login with redirect:', redirectTo);
       await login(data.email, data.password);
+      console.log('✅ [SignIn] Login successful, showing notification...');
+      
       addNotification({
         type: 'success',
         title: 'Welcome back!',
         message: 'You have successfully signed in to your account.',
       });
-      navigate(dashboardRoute);
+      
+      // Add a small delay to ensure auth state is fully updated
+      console.log('🔍 [SignIn] Waiting for auth state to update...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Redirect to the specified page or dashboard
+      const redirectPath = redirectTo || dashboardRoute;
+      console.log('🔍 [SignIn] Redirecting to:', redirectPath);
+      navigate(redirectPath);
     } catch (err: any) {
+      console.error('❌ [SignIn] Login failed:', err);
       addNotification({
         type: 'error',
         title: 'Sign in failed',

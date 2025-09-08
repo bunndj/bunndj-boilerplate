@@ -17,8 +17,9 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'username' => 'required|string|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
-            'organization' => 'required|string|max:255',
-            'phone' => 'required|string|max:255',
+            'organization' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:255',
+            'role' => 'nullable|in:dj,client',
         ]);
 
         $user = User::create([
@@ -28,7 +29,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'organization' => $request->organization,
             'home_phone' => $request->phone, // Map phone to home_phone
-            'role' => 'dj', // All new registrations are DJs
+            'role' => $request->role ?? 'dj', // Default to DJ if not specified
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
@@ -54,6 +55,15 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        // Check if the user account is active
+        if (!$user->is_active) {
+            Auth::logout(); // Log out the user immediately
+            return response()->json([
+                'message' => 'Your account has been deactivated. Please contact an administrator for assistance.'
+            ], 403);
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
@@ -74,9 +84,74 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
+        $user = $request->user();
+
+        // Check if the user account is still active
+        if (!$user->is_active) {
+            // Revoke the current token
+            $request->user()->currentAccessToken()->delete();
+            
+            return response()->json([
+                'message' => 'Your account has been deactivated. Please contact an administrator for assistance.'
+            ], 403);
+        }
+
         return response()->json([
-            'user' => $request->user()
+            'user' => $user
         ]);
+    }
+
+    public function registerViaInvitation(Request $request, int $id)
+    {
+        // First, validate the invitation ID
+        $invitation = \App\Models\Invitation::where('id', $id)->first();
+        
+        if (!$invitation) {
+            return response()->json(['message' => 'Invalid invitation ID'], 404);
+        }
+
+        if ($invitation->isExpired()) {
+            $invitation->markAsExpired();
+            return response()->json(['message' => 'Invitation has expired'], 410);
+        }
+
+        if ($invitation->isAccepted()) {
+            return response()->json(['message' => 'Invitation already accepted'], 409);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'username' => 'required|string|max:255|unique:users',
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'phone' => 'nullable|string|max:255',
+        ]);
+
+        // Verify email matches invitation
+        if ($request->email !== $invitation->client_email) {
+            return response()->json(['message' => 'Email does not match invitation'], 422);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'username' => $request->username,
+            'password' => Hash::make($request->password),
+            'home_phone' => $request->phone,
+            'role' => 'client',
+        ]);
+
+        // Accept the invitation
+        $invitation->markAsAccepted();
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+            'message' => 'Registration successful and invitation accepted',
+            'invitation' => $invitation->load(['event', 'dj'])
+        ], 201);
     }
 
     public function updateProfile(Request $request)

@@ -16,20 +16,14 @@ use Exception;
 class DocumentController extends Controller
 {
     /**
-     * Upload and parse a document
+     * Parse notes text using AI
      */
-    public function uploadAndParse(Request $request): JsonResponse
+    public function parseNotes(Request $request): JsonResponse
     {
-        // Increase execution time limit for document processing
-        $maxExecutionTime = config('services.openai.max_execution_time', 300);
-        set_time_limit($maxExecutionTime);
-        ini_set('max_execution_time', $maxExecutionTime);
-        
         try {
             $validator = Validator::make($request->all(), [
                 'event_id' => 'required|exists:events,id',
-                'document' => 'required|file|mimes:pdf|max:10240', // 10MB max
-                'document_type' => 'required|in:pdf,email,note',
+                'notes' => 'required|string|max:10000',
             ]);
 
             if ($validator->fails()) {
@@ -44,6 +38,102 @@ class DocumentController extends Controller
             
             // Check if user owns the event
             if ($event->dj_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this event'
+                ], 403);
+            }
+
+            $notes = $request->input('notes');
+
+            // Analyze notes with OpenAI (same logic as document parsing)
+            try {
+                $parsedData = $this->analyzeContentWithOpenAI($notes);
+            } catch (Exception $e) {
+                Log::error('Notes analysis failed: ' . $e->getMessage());
+                
+                // If analysis fails, use basic fallback
+                $parsedData = [
+                    'extracted_fields' => [],
+                    'confidence_score' => 0,
+                    'raw_text' => substr($notes, 0, 1000),
+                    'analysis_timestamp' => now()->toISOString(),
+                    'ai_model' => 'fallback',
+                    'ai_response' => 'Analysis failed: ' . $e->getMessage(),
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notes parsed successfully',
+                'data' => $parsedData
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Notes parsing error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to parse notes: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload and parse a document
+     */
+    public function uploadAndParse(Request $request): JsonResponse
+    {
+        // Increase execution time limit for document processing
+        $maxExecutionTime = config('services.openai.max_execution_time', 300);
+        set_time_limit($maxExecutionTime);
+        ini_set('max_execution_time', $maxExecutionTime);
+        
+        try {
+            \Log::info('=== DOCUMENT UPLOAD DEBUG ===');
+            \Log::info('Document uploadAndParse method called', [
+                'user_authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user_role' => auth()->user()?->role,
+                'user_email' => auth()->user()?->email,
+                'request_data' => $request->all()
+            ]);
+
+            $validator = Validator::make($request->all(), [
+                'event_id' => 'required|exists:events,id',
+                'document' => 'required|file|mimes:pdf|max:10240', // 10MB max
+                'document_type' => 'required|in:pdf,email,note',
+            ]);
+
+            if ($validator->fails()) {
+                \Log::warning('Document upload validation failed', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $event = Event::findOrFail($request->event_id);
+            
+            \Log::info('Event found for document upload', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'event_dj_id' => $event->dj_id,
+                'auth_user_id' => auth()->id(),
+                'is_dj_owner' => $event->dj_id === auth()->id()
+            ]);
+            
+            // Check if user owns the event
+            if ($event->dj_id !== auth()->id()) {
+                \Log::warning('User does not own the event', [
+                    'event_id' => $event->id,
+                    'event_dj_id' => $event->dj_id,
+                    'auth_user_id' => auth()->id(),
+                    'user_role' => auth()->user()?->role
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access to this event'
@@ -92,7 +182,7 @@ class DocumentController extends Controller
                 'document_type' => $request->document_type,
                 'file_path' => $filePath,
                 'original_filename' => $originalFilename,
-                'file_size' => $fileSize,
+                'file_size' => (string) $fileSize,
                 'mime_type' => $mimeType,
                 'parsed_data' => $parsedData,
                 'is_processed' => true,
@@ -646,6 +736,282 @@ Extract all the information you can find and return it in the exact JSON format 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload and parse a document for client users
+     */
+    public function uploadAndParseForClient(Request $request): JsonResponse
+    {
+        // Increase execution time limit for document processing
+        $maxExecutionTime = config('services.openai.max_execution_time', 300);
+        set_time_limit($maxExecutionTime);
+        ini_set('max_execution_time', $maxExecutionTime);
+        
+        try {
+            \Log::info('=== CLIENT DOCUMENT UPLOAD DEBUG ===');
+            \Log::info('Client document uploadAndParse method called', [
+                'user_authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user_role' => auth()->user()?->role,
+                'user_email' => auth()->user()?->email,
+                'request_data' => $request->all()
+            ]);
+
+            $validator = Validator::make($request->all(), [
+                'event_id' => 'required|exists:events,id',
+                'document' => 'required|file|mimes:pdf|max:10240', // 10MB max
+                'document_type' => 'required|in:pdf,email,note',
+            ]);
+
+            if ($validator->fails()) {
+                \Log::warning('Client document upload validation failed', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $event = Event::findOrFail($request->event_id);
+            $user = auth()->user();
+            
+            \Log::info('Event found for client document upload', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'event_client_email' => $event->client_email,
+                'user_email' => $user->email,
+                'user_role' => $user->role
+            ]);
+            
+            // Check if client is invited to this event
+            $invitation = \App\Models\Invitation::where('event_id', $event->id)
+                                              ->where('client_email', $user->email)
+                                              ->where('status', 'accepted')
+                                              ->first();
+
+            if (!$invitation) {
+                \Log::warning('Client not invited to event for document upload', [
+                    'event_id' => $event->id,
+                    'client_email' => $user->email,
+                    'available_invitations' => \App\Models\Invitation::where('event_id', $event->id)
+                                                                     ->where('client_email', $user->email)
+                                                                     ->get(['id', 'status', 'client_email'])
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this event'
+                ], 403);
+            }
+
+            \Log::info('Client invitation verified for document upload', [
+                'invitation_id' => $invitation->id,
+                'invitation_status' => $invitation->status
+            ]);
+
+            $file = $request->file('document');
+            $originalFilename = $file->getClientOriginalName();
+            $fileSize = $file->getSize();
+            $mimeType = $file->getMimeType();
+
+            \Log::info('File details for client upload', [
+                'original_filename' => $originalFilename,
+                'file_size' => $fileSize,
+                'mime_type' => $mimeType
+            ]);
+
+            // Generate unique filename
+            $filename = uniqid() . '_' . time() . '.pdf';
+            $filePath = 'event-documents/' . $event->id . '/' . $filename;
+
+            // Upload to S3
+            $s3Path = Storage::disk('s3')->put($filePath, $file, 'public');
+
+            if (!$s3Path) {
+                throw new Exception('Failed to upload file to S3');
+            }
+
+            \Log::info('File uploaded to S3 for client', [
+                's3_path' => $s3Path,
+                'file_path' => $filePath
+            ]);
+
+            // Parse PDF content
+            $pdfContent = $this->parsePdfContent($file->getPathname());
+
+            \Log::info('PDF parsed for client', [
+                'content_length' => strlen($pdfContent),
+                'content_preview' => substr($pdfContent, 0, 200) . '...'
+            ]);
+
+            // Analyze with OpenAI
+            $aiAnalysis = $this->analyzeContentWithOpenAI($pdfContent);
+
+            \Log::info('AI analysis completed for client', [
+                'extracted_fields_count' => count($aiAnalysis['extracted_fields'] ?? [])
+            ]);
+
+            // Store document record
+            $document = EventDocument::create([
+                'event_id' => $event->id,
+                'original_filename' => $originalFilename,
+                'file_path' => $s3Path,
+                'file_size' => (string) $fileSize,
+                'mime_type' => $mimeType,
+                'document_type' => $request->document_type,
+                'parsed_data' => $aiAnalysis,
+                'is_processed' => true,
+                'uploaded_by' => $user->id
+            ]);
+
+            \Log::info('Document record created for client', [
+                'document_id' => $document->id,
+                'event_id' => $event->id
+            ]);
+
+            \Log::info('=== END CLIENT DOCUMENT UPLOAD DEBUG ===');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document uploaded and parsed successfully',
+                'data' => [
+                    'document_id' => $document->id,
+                    'filename' => $originalFilename,
+                    'file_size' => $fileSize,
+                    'parsed_content' => $pdfContent,
+                    'ai_analysis' => $aiAnalysis
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            \Log::error('Error in client document upload', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload and parse document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Parse notes for client users
+     */
+    public function parseNotesForClient(Request $request): JsonResponse
+    {
+        try {
+            \Log::info('=== CLIENT NOTES PARSE DEBUG ===');
+            \Log::info('Client notes parse method called', [
+                'user_authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user_role' => auth()->user()?->role,
+                'user_email' => auth()->user()?->email,
+                'request_data' => $request->all()
+            ]);
+
+            $validator = Validator::make($request->all(), [
+                'event_id' => 'required|exists:events,id',
+                'notes' => 'required|string|max:10000',
+            ]);
+
+            if ($validator->fails()) {
+                \Log::warning('Client notes parse validation failed', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $event = Event::findOrFail($request->event_id);
+            $user = auth()->user();
+            
+            \Log::info('Event found for client notes parse', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'event_client_email' => $event->client_email,
+                'user_email' => $user->email,
+                'user_role' => $user->role
+            ]);
+            
+            // Check if client is invited to this event
+            $invitation = \App\Models\Invitation::where('event_id', $event->id)
+                                              ->where('client_email', $user->email)
+                                              ->where('status', 'accepted')
+                                              ->first();
+
+            if (!$invitation) {
+                \Log::warning('Client not invited to event for notes parse', [
+                    'event_id' => $event->id,
+                    'client_email' => $user->email,
+                    'available_invitations' => \App\Models\Invitation::where('event_id', $event->id)
+                                                                     ->where('client_email', $user->email)
+                                                                     ->get(['id', 'status', 'client_email'])
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this event'
+                ], 403);
+            }
+
+            \Log::info('Client invitation verified for notes parse', [
+                'invitation_id' => $invitation->id,
+                'invitation_status' => $invitation->status
+            ]);
+
+            $notes = $request->input('notes');
+
+            \Log::info('Notes received for client parse', [
+                'notes_length' => strlen($notes),
+                'notes_preview' => substr($notes, 0, 200) . '...'
+            ]);
+
+            // Analyze notes with OpenAI (same logic as document parsing)
+            try {
+                $aiAnalysis = $this->analyzeContentWithOpenAI($notes);
+
+                \Log::info('AI analysis completed for client notes', [
+                    'extracted_fields_count' => count($aiAnalysis['extracted_fields'] ?? [])
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notes parsed successfully',
+                    'data' => $aiAnalysis
+                ]);
+
+            } catch (Exception $e) {
+                \Log::error('OpenAI analysis failed for client notes', [
+                    'error' => $e->getMessage(),
+                    'notes_length' => strlen($notes)
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to analyze notes with AI',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+        } catch (Exception $e) {
+            \Log::error('Error in client notes parse', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to parse notes',
                 'error' => $e->getMessage()
             ], 500);
         }

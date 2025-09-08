@@ -116,6 +116,23 @@ class Event extends Model
     }
 
     /**
+     * Get all invitations for this event
+     */
+    public function invitations()
+    {
+        return $this->hasMany(Invitation::class);
+    }
+
+    /**
+     * Get all clients invited to this event
+     */
+    public function invitedClients()
+    {
+        return $this->hasManyThrough(User::class, Invitation::class, 'event_id', 'email', 'id', 'client_email')
+                    ->where('invitations.status', 'accepted');
+    }
+
+    /**
      * Get the full venue address
      */
     public function getFullVenueAddressAttribute(): string

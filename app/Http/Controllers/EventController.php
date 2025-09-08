@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Invitation;
+use App\Mail\EventInvitationMail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class EventController extends Controller
 {
@@ -91,13 +95,18 @@ class EventController extends Controller
     }
 
     /**
-     * Check if user owns the event.
+     * Check if user owns the event or is an admin.
      */
     private function authorizeEventAccess(Event $event, $userId): void
     {
-        if ($event->dj_id !== $userId) {
-            abort(403, 'Unauthorized access to this event.');
+        $user = auth()->user();
+        
+        // Allow access if user is an admin or owns the event
+        if ($user && ($user->role === 'admin' || $event->dj_id === $userId)) {
+            return;
         }
+        
+        abort(403, 'Unauthorized access to this event.');
     }
     /**
      * Display a listing of events for the authenticated user.
@@ -109,6 +118,7 @@ class EventController extends Controller
             
             // Get events for the authenticated user (assuming dj_id corresponds to user_id)
             $events = Event::where('dj_id', $user->id)
+                          ->with(['invitations'])
                           ->orderBy('event_date', 'desc')
                           ->get();
 
@@ -139,10 +149,37 @@ class EventController extends Controller
             // Create the event
             $event = Event::create($validatedData);
 
+            // Send invitation email if client email is provided
+            $invitation = null;
+            if (!empty($validatedData['client_email'])) {
+                try {
+                    // Create invitation
+                    $invitation = Invitation::create([
+                        'event_id' => $event->id,
+                        'dj_id' => $request->user()->id,
+                        'client_email' => $validatedData['client_email'],
+                        'client_name' => $validatedData['client_firstname'] . ' ' . $validatedData['client_lastname'],
+                        'expires_at' => Carbon::now()->addDays(7), // 7 days expiry
+                    ]);
+
+                    // Send invitation email
+                    Mail::to($validatedData['client_email'])->send(new EventInvitationMail($invitation));
+
+                } catch (\Exception $emailException) {
+                    // Log email error but don't fail the event creation
+                    \Log::error('Failed to send invitation email', [
+                        'event_id' => $event->id,
+                        'client_email' => $validatedData['client_email'],
+                        'error' => $emailException->getMessage()
+                    ]);
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Event created successfully.',
-                'data' => $event
+                'message' => 'Event created successfully' . ($invitation ? ' and invitation sent.' : '.'),
+                'data' => $event->load(['invitations']),
+                'invitation' => $invitation
             ], 201);
 
         } catch (ValidationException $e) {
@@ -166,13 +203,70 @@ class EventController extends Controller
     public function show(Request $request, Event $event): JsonResponse
     {
         try {
-            $this->authorizeEventAccess($event, $request->user()->id);
+            \Log::info('Event show method called', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'user_authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user_role' => auth()->user()?->role
+            ]);
+
+            $user = $request->user();
+            
+            if (!$user) {
+                \Log::error('No authenticated user found');
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            
+            // Check authorization based on user role
+            if ($user->role === 'admin') {
+                // Admins can view any event
+                \Log::info('Loading event for admin', ['event_id' => $event->id]);
+                $event->load(['dj', 'invitations.client']);
+            } elseif ($user->role === 'dj') {
+                // DJs can only view their own events
+                \Log::info('Loading event for DJ', ['event_id' => $event->id, 'dj_id' => $user->id]);
+                $this->authorizeEventAccess($event, $user->id);
+            } elseif ($user->role === 'client') {
+                // Clients can only view events they're invited to
+                \Log::info('Loading event for client', ['event_id' => $event->id, 'client_email' => $user->email]);
+                
+                // Use the same logic as invitedEvents relationship
+                $invitation = \App\Models\Invitation::where('event_id', $event->id)
+                                                  ->where('client_email', $user->email)
+                                                  ->where('status', 'accepted')
+                                                  ->first();
+                
+                if (!$invitation) {
+                    \Log::warning('Client not invited to event or invitation not accepted', [
+                        'event_id' => $event->id, 
+                        'client_email' => $user->email,
+                        'available_invitations' => \App\Models\Invitation::where('event_id', $event->id)
+                                                                        ->where('client_email', $user->email)
+                                                                        ->get(['id', 'status', 'client_email'])
+                    ]);
+                    return response()->json(['message' => 'Event not found or access denied'], 404);
+                }
+                
+                $event->load(['dj', 'planning', 'musicIdeas', 'timeline']);
+            } else {
+                \Log::warning('Invalid user role', ['user_role' => $user->role]);
+                return response()->json(['message' => 'Access denied'], 403);
+            }
+
+            \Log::info('Event loaded successfully', ['event_id' => $event->id]);
 
             return response()->json([
                 'success' => true,
                 'data' => $event
             ]);
         } catch (\Exception $e) {
+            \Log::error('Event show method error', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch event.',
@@ -191,13 +285,77 @@ class EventController extends Controller
             
             $validatedData = $this->validateAndPrepareEventData($request, true);
 
+            // Check if client email has changed
+            $oldClientEmail = $event->client_email;
+            $newClientEmail = $validatedData['client_email'] ?? null;
+            $emailChanged = $oldClientEmail !== $newClientEmail;
+
             // Update the event
             $event->update($validatedData);
 
+            $invitation = null;
+            $invitationMessage = '';
+
+            // Handle invitation logic if client email changed
+            if ($emailChanged) {
+                try {
+                    // Find existing invitation by dj_id and event_id
+                    $invitation = Invitation::where('event_id', $event->id)
+                        ->where('dj_id', $request->user()->id)
+                        ->first();
+
+                    if (!empty($newClientEmail)) {
+                        $invitationData = [
+                            'client_email' => $newClientEmail,
+                            'client_name' => ($validatedData['client_firstname'] ?? '') . ' ' . ($validatedData['client_lastname'] ?? ''),
+                            'expires_at' => Carbon::now()->addDays(7), // Reset expiry to 7 days
+                            'status' => 'pending', // Reset status to pending
+                            'updated_at' => Carbon::now(),
+                        ];
+
+                        if ($invitation) {
+                            // Update existing invitation
+                            $invitation->update($invitationData);
+                            $invitationMessage = ' and invitation updated for new client email';
+                        } else {
+                            // Create new invitation if none exists
+                            $invitationData['event_id'] = $event->id;
+                            $invitationData['dj_id'] = $request->user()->id;
+                            $invitation = Invitation::create($invitationData);
+                            $invitationMessage = ' and new invitation created for client email';
+                        }
+
+                        // Send invitation email
+                        Mail::to($newClientEmail)->send(new EventInvitationMail($invitation));
+                        $invitationMessage .= ' and email sent';
+                    } else {
+                        // If email is removed, mark invitation as cancelled
+                        if ($invitation) {
+                            $invitation->update(['status' => 'cancelled']);
+                            $invitationMessage = ' and invitation cancelled';
+                        } else {
+                            $invitationMessage = ' and client email removed';
+                        }
+                    }
+
+                } catch (\Exception $emailException) {
+                    // Log email error but don't fail the event update
+                    \Log::error('Failed to send invitation email during event update', [
+                        'event_id' => $event->id,
+                        'old_email' => $oldClientEmail,
+                        'new_email' => $newClientEmail,
+                        'error' => $emailException->getMessage()
+                    ]);
+                    $invitationMessage = ' but failed to send invitation email';
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Event updated successfully.',
-                'data' => $event->fresh()
+                'message' => 'Event updated successfully' . $invitationMessage . '.',
+                'data' => $event->fresh(['invitations']),
+                'invitation' => $invitation,
+                'email_changed' => $emailChanged
             ]);
 
         } catch (ValidationException $e) {
@@ -233,6 +391,238 @@ class EventController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete event.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get events for a client (only invited events)
+     */
+    public function getClientEvents(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user->isClient()) {
+                return response()->json(['message' => 'Access denied'], 403);
+            }
+
+            $events = $user->invitedEvents()
+                          ->with(['dj', 'planning', 'musicIdeas', 'timeline'])
+                          ->orderBy('event_date', 'desc')
+                          ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $events
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch client events.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all events for admin (with DJ and client information)
+     */
+    public function getAdminEvents(Request $request): JsonResponse
+    {
+        try {
+            $query = Event::with(['dj', 'invitations.client']);
+
+            // Search functionality
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('client_firstname', 'like', "%{$search}%")
+                      ->orWhere('client_lastname', 'like', "%{$search}%")
+                      ->orWhere('client_email', 'like', "%{$search}%")
+                      ->orWhere('venue_name', 'like', "%{$search}%");
+                });
+            }
+
+            // Status filter
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            // DJ filter
+            if ($request->has('dj') && $request->dj !== 'all') {
+                $query->where('dj_id', $request->dj);
+            }
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $events = $query->orderBy('event_date', 'desc')->paginate($perPage);
+
+            // Transform the data to include client information from invitations
+            $transformedEvents = $events->getCollection()->map(function ($event) {
+                $client = $event->invitations->first()?->client;
+                
+                // Format the event date properly
+                $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('Y-m-d') : null;
+                
+                // Format start and end times properly
+                $startTime = $event->start_time ? Carbon::parse($event->start_time)->format('H:i') : null;
+                $endTime = $event->end_time ? Carbon::parse($event->end_time)->format('H:i') : null;
+                
+                // Get package value - try both package and service_package fields
+                $packageValue = $event->package ?? $event->service_package;
+                // Convert to number if it's a numeric string
+                $packageNumeric = is_numeric($packageValue) ? (float)$packageValue : 0;
+                
+                return [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'event_date' => $eventDate,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'venue_name' => $event->venue_name,
+                    'venue_city' => $event->venue_city,
+                    'venue_state' => $event->venue_state,
+                    'guest_count' => $event->guest_count,
+                    'dj' => [
+                        'id' => $event->dj->id,
+                        'name' => $event->dj->name,
+                        'organization' => $event->dj->organization,
+                    ],
+                    'client_firstname' => $client?->name ? explode(' ', $client->name)[0] : $event->client_firstname,
+                    'client_lastname' => $client?->name ? explode(' ', $client->name, 2)[1] ?? '' : $event->client_lastname,
+                    'client_email' => $client?->email ?? $event->client_email,
+                    'package' => $packageNumeric,
+                    'status' => $event->status ?? 'upcoming',
+                    'created_at' => $event->created_at,
+                ];
+            });
+
+            // Debug logging
+            \Log::info('Admin Events API called', [
+                'total_events' => $events->total(),
+                'current_page' => $events->currentPage(),
+                'events_count' => $events->count(),
+                'first_event' => $transformedEvents->first()
+            ]);
+
+            return response()->json([
+                'data' => $transformedEvents,
+                'pagination' => [
+                    'current_page' => $events->currentPage(),
+                    'last_page' => $events->lastPage(),
+                    'per_page' => $events->perPage(),
+                    'total' => $events->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch admin events.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get a specific event for a client (only if invited)
+     */
+    public function getClientEvent(Request $request, Event $event): JsonResponse
+    {
+        try {
+            \Log::info('=== CLIENT EVENT ACCESS DEBUG ===');
+            \Log::info('getClientEvent method called', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'event_client_email' => $event->client_email,
+                'user_authenticated' => auth()->check(),
+                'user_id' => auth()->id(),
+                'user_role' => auth()->user()?->role,
+                'user_email' => auth()->user()?->email
+            ]);
+
+            $user = $request->user();
+            
+            if (!$user) {
+                \Log::error('No authenticated user found in getClientEvent');
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            
+            \Log::info('User details in getClientEvent', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'is_client' => $user->isClient()
+            ]);
+            
+            if (!$user->isClient()) {
+                \Log::warning('User is not a client', [
+                    'user_role' => $user->role,
+                    'is_client_method' => $user->isClient()
+                ]);
+                return response()->json(['message' => 'Access denied'], 403);
+            }
+
+            // Check all invitations for this event and client first
+            $allInvitations = \App\Models\Invitation::where('event_id', $event->id)
+                                                  ->where('client_email', $user->email)
+                                                  ->get(['id', 'status', 'client_email', 'expires_at']);
+            
+            \Log::info('All invitations for this client and event', [
+                'event_id' => $event->id,
+                'client_email' => $user->email,
+                'invitations' => $allInvitations->toArray(),
+                'invitation_count' => $allInvitations->count()
+            ]);
+
+            // Check if client is invited to this event
+            $invitation = \App\Models\Invitation::where('event_id', $event->id)
+                                              ->where('client_email', $user->email)
+                                              ->where('status', 'accepted')
+                                              ->first();
+
+            if (!$invitation) {
+                \Log::warning('Client not invited to event or invitation not accepted', [
+                    'event_id' => $event->id,
+                    'client_email' => $user->email,
+                    'available_invitations' => $allInvitations->toArray(),
+                    'accepted_invitation_found' => false
+                ]);
+                return response()->json(['message' => 'Event not found or access denied'], 404);
+            }
+
+            \Log::info('Invitation found and accepted', [
+                'invitation_id' => $invitation->id,
+                'invitation_status' => $invitation->status,
+                'invitation_client_email' => $invitation->client_email
+            ]);
+
+            $event->load(['dj', 'planning', 'musicIdeas', 'timeline']);
+
+            \Log::info('Event loaded successfully for client', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'has_planning' => $event->planning ? 'Yes' : 'No',
+                'has_music_ideas' => $event->musicIdeas ? 'Yes' : 'No',
+                'has_timeline' => $event->timeline ? 'Yes' : 'No'
+            ]);
+            \Log::info('=== END CLIENT EVENT ACCESS DEBUG ===');
+
+            return response()->json([
+                'success' => true,
+                'data' => $event
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getClientEvent', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'event_id' => $event->id ?? 'unknown'
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch event.',
                 'error' => $e->getMessage()
             ], 500);
         }

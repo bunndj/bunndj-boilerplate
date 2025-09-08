@@ -170,7 +170,8 @@ export class AIFormFiller {
    */
   static fillPlanningForm(
     currentData: PlanningFormData,
-    extractedData: ExtractedData
+    extractedData: ExtractedData,
+    appendMode: boolean = false
   ): PlanningFormData {
     const fields = extractedData.extracted_fields;
     const filledData = { ...currentData };
@@ -272,7 +273,8 @@ export class AIFormFiller {
    */
   static fillMusicIdeasForm(
     currentData: MusicIdeasFormData,
-    extractedData: ExtractedData
+    extractedData: ExtractedData,
+    appendMode: boolean = false
   ): MusicIdeasFormData {
     const fields = extractedData.extracted_fields;
     const filledData = { ...currentData };
@@ -281,13 +283,15 @@ export class AIFormFiller {
     if (fields.songs && Array.isArray(fields.songs)) {
       console.log('Processing songs:', fields.songs);
       
-      // Clear existing song data to prevent duplication
-      filledData.must_play = [];
-      filledData.play_if_possible = [];
-      filledData.dedication = [];
-      filledData.play_only_if_requested = [];
-      filledData.do_not_play = [];
-      filledData.guest_request = [];
+      // Clear existing song data to prevent duplication (only if not in append mode)
+      if (!appendMode) {
+        filledData.must_play = [];
+        filledData.play_if_possible = [];
+        filledData.dedication = [];
+        filledData.play_only_if_requested = [];
+        filledData.do_not_play = [];
+        filledData.guest_request = [];
+      }
       
       // OpenAI should have already categorized the songs
       fields.songs.forEach((song: any) => {
@@ -338,7 +342,8 @@ export class AIFormFiller {
    */
   static fillTimelineForm(
     currentData: TimelineFormData,
-    extractedData: ExtractedData
+    extractedData: ExtractedData,
+    appendMode: boolean = false
   ): TimelineFormData {
     const fields = extractedData.extracted_fields;
     const filledData = { ...currentData };
@@ -352,8 +357,10 @@ export class AIFormFiller {
     if (fields.timeline_times && Array.isArray(fields.timeline_times)) {
       console.log('Timeline times found:', fields.timeline_times);
       
-      // Clear existing timeline data to prevent duplication
-      filledData.timeline_items = [];
+      // Clear existing timeline data to prevent duplication (only if not in append mode)
+      if (!appendMode) {
+        filledData.timeline_items = [];
+      }
       
       // Create new timeline items from extracted times with meaningful names and calculated end times
       console.log('Creating new timeline items from extracted data');
@@ -365,7 +372,21 @@ export class AIFormFiller {
         return timeA.localeCompare(timeB);
       });
       
-      filledData.timeline_items = sortedTimes.map((time, index) => {
+      // Create new timeline items and append them to existing ones
+      // Generate unique IDs that don't conflict with existing ones
+      const existingIds = new Set(filledData.timeline_items.map(item => item.id));
+      let nextId = 0;
+      const getUniqueId = () => {
+        let id;
+        do {
+          id = `temp_${nextId}`;
+          nextId++;
+        } while (existingIds.has(id));
+        existingIds.add(id);
+        return id;
+      };
+      
+      const newTimelineItems = sortedTimes.map((time, index) => {
         const startTime = this.convertTimeToTimeInputFormat(time);
         let endTime = '';
         
@@ -395,15 +416,22 @@ export class AIFormFiller {
         }
         
         return {
-          id: `temp_${index}`,
+          id: getUniqueId(),
           name: activityName,
           start_time: startTime,
           end_time: endTime,
           notes: fields.timeline_activities?.[index] || '',
           time_offset: 0,
-          order: index
+          order: filledData.timeline_items.length + index
         };
       });
+      
+      // Append new timeline items to existing ones
+      if (appendMode) {
+        filledData.timeline_items = [...filledData.timeline_items, ...newTimelineItems];
+      } else {
+        filledData.timeline_items = newTimelineItems;
+      }
     }
 
     // Also handle individual time fields that might be extracted

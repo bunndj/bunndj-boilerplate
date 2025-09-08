@@ -33,4 +33,22 @@ export const planningService = {
     });
     return response.data;
   },
+
+  // Client-specific methods
+  getPlanningForClient: async (eventId: number): Promise<PlanningData> => {
+    const response = await apiClient.get(`/client/events/${eventId}/planning`);
+    return response.data;
+  },
+
+  updatePlanningForClient: async (
+    eventId: number,
+    data: PlanningFormData,
+    notes?: string
+  ): Promise<{ data: PlanningData }> => {
+    const response = await apiClient.put(`/client/events/${eventId}/planning`, {
+      planning_data: data,
+      notes: notes || null,
+    });
+    return response.data;
+  },
 };
