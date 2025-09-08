@@ -62,6 +62,11 @@ class EventMusicIdeasController extends Controller
     public function store(Request $request, Event $event): JsonResponse
     {
         try {
+            \Log::info('Music ideas store validation starting', [
+                'request_data' => $request->all(),
+                'event_id' => $event->id
+            ]);
+
             $validated = $request->validate([
                 'music_ideas' => 'nullable|array',
                 'music_ideas.must_play' => 'nullable|array|max:60',
@@ -70,25 +75,29 @@ class EventMusicIdeasController extends Controller
                 'music_ideas.play_only_if_requested' => 'nullable|array|max:5',
                 'music_ideas.do_not_play' => 'nullable|array|max:10',
                 'music_ideas.guest_request' => 'nullable|array',
-                'music_ideas.must_play.*.song_title' => 'required_with:music_ideas.must_play.*|string|max:255',
-                'music_ideas.must_play.*.artist' => 'nullable|string|max:255',
-                'music_ideas.must_play.*.client_visible_title' => 'nullable|string|max:255',
-                'music_ideas.play_if_possible.*.song_title' => 'required_with:music_ideas.play_if_possible.*|string|max:255',
-                'music_ideas.play_if_possible.*.artist' => 'nullable|string|max:255',
-                'music_ideas.play_if_possible.*.client_visible_title' => 'nullable|string|max:255',
-                'music_ideas.dedication.*.song_title' => 'required_with:music_ideas.dedication.*|string|max:255',
-                'music_ideas.dedication.*.artist' => 'nullable|string|max:255',
-                'music_ideas.dedication.*.client_visible_title' => 'nullable|string|max:255',
-                'music_ideas.play_only_if_requested.*.song_title' => 'required_with:music_ideas.play_only_if_requested.*|string|max:255',
-                'music_ideas.play_only_if_requested.*.artist' => 'nullable|string|max:255',
-                'music_ideas.play_only_if_requested.*.client_visible_title' => 'nullable|string|max:255',
-                'music_ideas.do_not_play.*.song_title' => 'required_with:music_ideas.do_not_play.*|string|max:255',
-                'music_ideas.do_not_play.*.artist' => 'nullable|string|max:255',
-                'music_ideas.do_not_play.*.client_visible_title' => 'nullable|string|max:255',
-                'music_ideas.guest_request.*.song_title' => 'required_with:music_ideas.guest_request.*|string|max:255',
-                'music_ideas.guest_request.*.artist' => 'nullable|string|max:255',
-                'music_ideas.guest_request.*.client_visible_title' => 'nullable|string|max:255',
+                'music_ideas.must_play.*.song_title' => 'required_with:music_ideas.must_play.*|string|max:500',
+                'music_ideas.must_play.*.artist' => 'nullable|string|max:500',
+                'music_ideas.must_play.*.client_visible_title' => 'nullable|string|max:500',
+                'music_ideas.play_if_possible.*.song_title' => 'required_with:music_ideas.play_if_possible.*|string|max:500',
+                'music_ideas.play_if_possible.*.artist' => 'nullable|string|max:500',
+                'music_ideas.play_if_possible.*.client_visible_title' => 'nullable|string|max:500',
+                'music_ideas.dedication.*.song_title' => 'required_with:music_ideas.dedication.*|string|max:500',
+                'music_ideas.dedication.*.artist' => 'nullable|string|max:500',
+                'music_ideas.dedication.*.client_visible_title' => 'nullable|string|max:500',
+                'music_ideas.play_only_if_requested.*.song_title' => 'required_with:music_ideas.play_only_if_requested.*|string|max:500',
+                'music_ideas.play_only_if_requested.*.artist' => 'nullable|string|max:500',
+                'music_ideas.play_only_if_requested.*.client_visible_title' => 'nullable|string|max:500',
+                'music_ideas.do_not_play.*.song_title' => 'required_with:music_ideas.do_not_play.*|string|max:500',
+                'music_ideas.do_not_play.*.artist' => 'nullable|string|max:500',
+                'music_ideas.do_not_play.*.client_visible_title' => 'nullable|string|max:500',
+                'music_ideas.guest_request.*.song_title' => 'required_with:music_ideas.guest_request.*|string|max:500',
+                'music_ideas.guest_request.*.artist' => 'nullable|string|max:500',
+                'music_ideas.guest_request.*.client_visible_title' => 'nullable|string|max:500',
                 'notes' => 'nullable|string'
+            ]);
+
+            \Log::info('Music ideas validation passed', [
+                'validated_data' => $validated
             ]);
 
             $musicIdeas = EventMusicIdeas::updateOrCreate(
@@ -107,11 +116,21 @@ class EventMusicIdeasController extends Controller
             ]);
 
         } catch (ValidationException $e) {
+            \Log::error('Music ideas validation failed', [
+                'errors' => $e->errors(),
+                'event_id' => $event->id,
+                'request_data' => $request->all()
+            ]);
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            \Log::error('Music ideas save failed', [
+                'error' => $e->getMessage(),
+                'event_id' => $event->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'message' => 'Failed to save music ideas',
                 'error' => $e->getMessage()

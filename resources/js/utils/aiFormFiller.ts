@@ -296,13 +296,42 @@ export class AIFormFiller {
       // OpenAI should have already categorized the songs
       fields.songs.forEach((song: any) => {
         // Ensure we get the full song title and artist (no truncation)
-        const songTitle = song.title || song.song_title || '';
+        let songTitle = song.title || song.song_title || '';
         const artistName = song.artist || '';
+        
+        // Clean up song title - remove line breaks and excessive text
+        songTitle = songTitle.replace(/\n/g, ' ').trim();
+        
+        // If title is too long (likely not a real song), try to extract actual song info
+        if (songTitle.length > 100) {
+          // Look for common patterns like "Song Name - Artist" or "Song Name by Artist"
+          const songPattern = /^([^-]+?)(?:\s*-\s*|\s+by\s+)([^-\n]+)/i;
+          const match = songTitle.match(songPattern);
+          if (match) {
+            songTitle = match[1].trim();
+          } else {
+            // If no pattern found, truncate to first meaningful part
+            const words = songTitle.split(' ');
+            if (words.length > 8) {
+              songTitle = words.slice(0, 8).join(' ');
+            }
+          }
+        }
+        
+        // Skip if title is still too long or contains timeline-like text
+        if (songTitle.length > 255) {
+          console.log('Skipping invalid song title:', songTitle);
+          return;
+        }
+        
+        // Ensure title and artist are not too long for database (backend allows 500 chars but let's be safe)
+        songTitle = songTitle.substring(0, 250).trim();
+        const cleanArtist = artistName.substring(0, 250).trim();
         
         const songData = {
           song_title: songTitle,
-          artist: artistName,
-          client_visible_title: songTitle, // Use the full title, not truncated
+          artist: cleanArtist,
+          client_visible_title: songTitle, // Use the cleaned title
         };
 
         console.log('Song data prepared:', songData);
