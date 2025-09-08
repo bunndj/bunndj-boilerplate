@@ -250,23 +250,42 @@ class DocumentController extends Controller
             $systemPrompt = $this->getSystemPrompt();
             $userPrompt = $this->getUserPrompt($content);
 
-            $timeout = config('services.openai.timeout', 120);
-            $response = Http::timeout($timeout)->withHeaders([
-                'Authorization' => 'Bearer ' . $openaiApiKey,
-                'Content-Type' => 'application/json',
-            ])->post('https://api.openai.com/v1/chat/completions', [
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user', 'content' => $userPrompt]
-                ],
-                'temperature' => 0.1,
-                'max_tokens' => 4000,
+            $timeout = config('services.openai.timeout', 300);
+            $connectTimeout = config('services.openai.connect_timeout', 30);
+            $retryAttempts = config('services.openai.retry_attempts', 3);
+            
+            Log::info('Starting OpenAI API request', [
+                'timeout' => $timeout,
+                'connect_timeout' => $connectTimeout,
+                'retry_attempts' => $retryAttempts,
+                'content_length' => strlen($userPrompt)
             ]);
+            
+            $response = Http::timeout($timeout)
+                ->connectTimeout($connectTimeout)
+                ->retry($retryAttempts, 1000) // Retry 3 times with 1 second delay
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $openaiApiKey,
+                    'Content-Type' => 'application/json',
+                ])->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => 'gpt-4o-mini',
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $userPrompt]
+                    ],
+                    'temperature' => 0.1,
+                    'max_tokens' => 4000,
+                ]);
 
             if ($response->successful()) {
                 $result = $response->json();
                 $aiResponse = $result['choices'][0]['message']['content'] ?? '';
+                
+                Log::info('OpenAI API request successful', [
+                    'response_time' => $response->handlerStats()['total_time'] ?? 'unknown',
+                    'status_code' => $response->status(),
+                    'ai_response_length' => strlen($aiResponse)
+                ]);
                 
                 // Parse the AI response
                 $extractedFields = $this->parseAIResponse($aiResponse);
@@ -280,19 +299,36 @@ class DocumentController extends Controller
                     'ai_response' => $aiResponse,
                 ];
             } else {
-                Log::warning('OpenAI API call failed, falling back to basic extraction', [
+                Log::error('OpenAI API call failed, falling back to basic extraction', [
                     'status' => $response->status(),
-                    'response' => $response->body()
+                    'response_body' => $response->body(),
+                    'response_headers' => $response->headers(),
+                    'request_timeout' => $timeout,
+                    'connect_timeout' => $connectTimeout
                 ]);
                 return $this->fallbackExtraction($content);
             }
 
         } catch (Exception $e) {
-            Log::error('OpenAI analysis error: ' . $e->getMessage());
+            Log::error('OpenAI analysis error', [
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'timeout_config' => $timeout,
+                'connect_timeout_config' => $connectTimeout,
+                'trace' => $e->getTraceAsString()
+            ]);
             
             // Check if it's a timeout error
-            if (strpos($e->getMessage(), 'timeout') !== false || strpos($e->getMessage(), 'Maximum execution time') !== false) {
-                Log::warning('OpenAI request timed out, using fallback extraction');
+            if (strpos($e->getMessage(), 'timeout') !== false || 
+                strpos($e->getMessage(), 'Maximum execution time') !== false ||
+                strpos($e->getMessage(), 'Connection timed out') !== false ||
+                strpos($e->getMessage(), 'cURL error 28') !== false) {
+                Log::warning('OpenAI request timed out, using fallback extraction', [
+                    'timeout_type' => 'network_timeout',
+                    'configured_timeout' => $timeout
+                ]);
             }
             
             return $this->fallbackExtraction($content);

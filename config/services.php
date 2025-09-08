@@ -39,8 +39,10 @@ return [
         'api_key' => env('OPENAI_API_KEY'),
         'organization' => env('OPENAI_ORGANIZATION'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
-        'timeout' => env('OPENAI_TIMEOUT', 120), // 2 minutes default
-        'max_execution_time' => env('OPENAI_MAX_EXECUTION_TIME', 300), // 5 minutes default
+        'timeout' => env('OPENAI_TIMEOUT', 300), // 5 minutes for production
+        'max_execution_time' => env('OPENAI_MAX_EXECUTION_TIME', 600), // 10 minutes max
+        'connect_timeout' => env('OPENAI_CONNECT_TIMEOUT', 30), // Connection timeout
+        'retry_attempts' => env('OPENAI_RETRY_ATTEMPTS', 3), // Retry failed requests
     ],
 
 ];
