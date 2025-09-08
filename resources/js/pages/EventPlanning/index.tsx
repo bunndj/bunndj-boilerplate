@@ -789,17 +789,6 @@ const EventPlanning: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  
-                  {/* Upload Document Button for DJ users - Alternative location */}
-                  {canUploadDocuments && (
-                    <button
-                      onClick={() => setIsDocumentUploadModalOpen(true)}
-                      className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Upload PDF</span>
-                    </button>
-                  )}
                 </div>
               </div>
               <PlanningForm
@@ -834,17 +823,6 @@ const EventPlanning: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  
-                  {/* Upload Document Button for DJ users */}
-                  {canUploadDocuments && (
-                    <button
-                      onClick={() => setIsDocumentUploadModalOpen(true)}
-                      className="flex items-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Upload PDF</span>
-                    </button>
-                  )}
                 </div>
               </div>
               <MusicIdeasForm
@@ -879,18 +857,7 @@ const EventPlanning: React.FC = () => {
                       <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                       Auto-saving
                     </div>
-                    
-                    {/* Upload Document Button for DJ users */}
-                    {canUploadDocuments && (
-                      <button
-                        onClick={() => setIsDocumentUploadModalOpen(true)}
-                        className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm"
-                      >
-                        <Upload className="w-4 h-4" />
-                        <span>Upload PDF</span>
-                      </button>
-                    )}
-                    
+                
                     <button
                       id="timeline-add-activity-btn"
                       className="px-3 py-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
