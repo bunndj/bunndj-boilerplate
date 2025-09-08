@@ -67,6 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('role:dj')->group(function () {
             Route::post('events/{event}/documents/upload', [DocumentController::class, 'uploadAndParse']);
             Route::post('events/{event}/documents/parse-notes', [DocumentController::class, 'parseNotes']);
+            Route::post('test-utf8-encoding', [DocumentController::class, 'testUtf8Encoding']);
             Route::get('events/{event}/documents', [DocumentController::class, 'getEventDocuments']);
             Route::delete('documents/{document}', [DocumentController::class, 'deleteDocument']);
         });

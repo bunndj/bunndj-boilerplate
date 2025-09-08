@@ -46,9 +46,12 @@ class DocumentController extends Controller
 
             $notes = $request->input('notes');
 
+            // Clean the notes content to ensure UTF-8 compliance before OpenAI analysis
+            $cleanNotes = $this->cleanUtf8Text($notes);
+
             // Analyze notes with OpenAI (same logic as document parsing)
             try {
-                $parsedData = $this->analyzeContentWithOpenAI($notes);
+                $parsedData = $this->analyzeContentWithOpenAI($cleanNotes);
             } catch (Exception $e) {
                 Log::error('Notes analysis failed: ' . $e->getMessage());
                 
@@ -280,6 +283,12 @@ class DocumentController extends Controller
     private function analyzeContentWithOpenAI(string $content): array
     {
         try {
+            // Ensure the content is UTF-8 clean before processing
+            if (!mb_check_encoding($content, 'UTF-8')) {
+                Log::warning('Content passed to analyzeContentWithOpenAI has UTF-8 issues, cleaning');
+                $content = $this->cleanUtf8Text($content);
+            }
+            
             $openaiApiKey = config('services.openai.api_key');
             
             if (!$openaiApiKey) {
@@ -304,9 +313,15 @@ class DocumentController extends Controller
                 $jsonError = json_last_error_msg();
                 Log::error('JSON encoding failed for OpenAI payload', [
                     'json_error' => $jsonError,
+                    'json_error_code' => json_last_error(),
                     'content_length' => strlen($content),
+                    'content_is_valid_utf8' => mb_check_encoding($content, 'UTF-8'),
                     'system_prompt_length' => strlen($systemPrompt),
-                    'user_prompt_length' => strlen($userPrompt)
+                    'system_prompt_is_valid_utf8' => mb_check_encoding($systemPrompt, 'UTF-8'),
+                    'user_prompt_length' => strlen($userPrompt),
+                    'user_prompt_is_valid_utf8' => mb_check_encoding($userPrompt, 'UTF-8'),
+                    'content_preview' => substr($content, 0, 200),
+                    'user_prompt_preview' => substr($userPrompt, 0, 200)
                 ]);
                 throw new Exception("JSON encoding failed: {$jsonError}");
             }
@@ -1010,6 +1025,79 @@ Extract all the information you can find and return it in the exact JSON format 
     }
 
     /**
+     * Test UTF-8 encoding handling
+     */
+    public function testUtf8Encoding(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'test_content' => 'required|string|max:5000',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $testContent = $request->input('test_content');
+            
+            Log::info('UTF-8 test initiated', [
+                'original_length' => strlen($testContent),
+                'original_is_valid_utf8' => mb_check_encoding($testContent, 'UTF-8'),
+                'original_preview' => substr($testContent, 0, 100)
+            ]);
+
+            // Clean the content
+            $cleanedContent = $this->cleanUtf8Text($testContent);
+            
+            // Test JSON encoding
+            $testPayload = [
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    ['role' => 'system', 'content' => 'Test system prompt'],
+                    ['role' => 'user', 'content' => $cleanedContent]
+                ]
+            ];
+            
+            $jsonResult = json_encode($testPayload);
+            $jsonSuccess = $jsonResult !== false;
+            
+            Log::info('UTF-8 test completed', [
+                'cleaned_length' => strlen($cleanedContent),
+                'cleaned_is_valid_utf8' => mb_check_encoding($cleanedContent, 'UTF-8'),
+                'json_encode_success' => $jsonSuccess,
+                'json_error' => $jsonSuccess ? null : json_last_error_msg()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'UTF-8 encoding test completed',
+                'data' => [
+                    'original_length' => strlen($testContent),
+                    'original_is_valid_utf8' => mb_check_encoding($testContent, 'UTF-8'),
+                    'cleaned_length' => strlen($cleanedContent),
+                    'cleaned_is_valid_utf8' => mb_check_encoding($cleanedContent, 'UTF-8'),
+                    'json_encode_success' => $jsonSuccess,
+                    'json_error' => $jsonSuccess ? null : json_last_error_msg(),
+                    'cleaned_preview' => substr($cleanedContent, 0, 200)
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('UTF-8 test error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'UTF-8 test failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Parse notes for client users
      */
     public function parseNotesForClient(Request $request): JsonResponse
@@ -1083,9 +1171,18 @@ Extract all the information you can find and return it in the exact JSON format 
                 'notes_preview' => substr($notes, 0, 200) . '...'
             ]);
 
+            // Clean the notes content to ensure UTF-8 compliance before OpenAI analysis
+            $cleanNotes = $this->cleanUtf8Text($notes);
+
+            \Log::info('Notes cleaned for client parse', [
+                'original_length' => strlen($notes),
+                'cleaned_length' => strlen($cleanNotes),
+                'is_valid_utf8' => mb_check_encoding($cleanNotes, 'UTF-8')
+            ]);
+
             // Analyze notes with OpenAI (same logic as document parsing)
             try {
-                $aiAnalysis = $this->analyzeContentWithOpenAI($notes);
+                $aiAnalysis = $this->analyzeContentWithOpenAI($cleanNotes);
 
                 \Log::info('AI analysis completed for client notes', [
                     'extracted_fields_count' => count($aiAnalysis['extracted_fields'] ?? [])
