@@ -10,6 +10,7 @@ const apiClient = axios.create({
     'X-Requested-With': 'XMLHttpRequest',
   },
   withCredentials: false, // We're using token-based auth, not cookie-based
+  timeout: 10 * 60 * 1000, // 10 minutes timeout for document uploads and AI processing
 });
 
 // Add CSRF token to requests (for stateful requests if needed)

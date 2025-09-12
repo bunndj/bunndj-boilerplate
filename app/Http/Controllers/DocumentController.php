@@ -296,50 +296,231 @@ class DocumentController extends Controller
                 return $this->fallbackExtraction($content);
             }
 
-            $systemPrompt = $this->getSystemPrompt();
-            $userPrompt = $this->getUserPrompt($content);
+            $contentLength = strlen($content);
+            Log::info('Document size check', [
+                'content_length' => $contentLength,
+                'mb_length' => mb_strlen($content, 'UTF-8'),
+                'will_use_chunking' => $contentLength > 15000
+            ]);
 
-            // Validate that the content can be JSON encoded before sending to OpenAI
-            $testPayload = [
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user', 'content' => $userPrompt]
-                ]
-            ];
-            
-            $jsonTest = json_encode($testPayload);
-            if ($jsonTest === false) {
-                $jsonError = json_last_error_msg();
-                Log::error('JSON encoding failed for OpenAI payload', [
-                    'json_error' => $jsonError,
-                    'json_error_code' => json_last_error(),
-                    'content_length' => strlen($content),
-                    'content_is_valid_utf8' => mb_check_encoding($content, 'UTF-8'),
-                    'system_prompt_length' => strlen($systemPrompt),
-                    'system_prompt_is_valid_utf8' => mb_check_encoding($systemPrompt, 'UTF-8'),
-                    'user_prompt_length' => strlen($userPrompt),
-                    'user_prompt_is_valid_utf8' => mb_check_encoding($userPrompt, 'UTF-8'),
-                    'content_preview' => substr($content, 0, 200),
-                    'user_prompt_preview' => substr($userPrompt, 0, 200)
-                ]);
-                throw new Exception("JSON encoding failed: {$jsonError}");
+            // Use chunking strategy for very large documents
+            if ($contentLength > 15000) {
+                return $this->analyzeContentWithChunking($content);
             }
 
-            $timeout = config('services.openai.timeout', 300);
-            $connectTimeout = config('services.openai.connect_timeout', 30);
-            $retryAttempts = config('services.openai.retry_attempts', 3);
-            
-            Log::info('Starting OpenAI API request', [
-                'timeout' => $timeout,
-                'connect_timeout' => $connectTimeout,
-                'retry_attempts' => $retryAttempts,
-                'content_length' => strlen($userPrompt)
+            // For smaller documents, use the single-request approach with optimizations
+            return $this->analyzeSingleDocument($content);
+
+        } catch (Exception $e) {
+            Log::error('OpenAI analysis error', [
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
             
+            // Check if it's a timeout error
+            if (strpos($e->getMessage(), 'timeout') !== false || 
+                strpos($e->getMessage(), 'Maximum execution time') !== false ||
+                strpos($e->getMessage(), 'Connection timed out') !== false ||
+                strpos($e->getMessage(), 'cURL error 28') !== false) {
+                Log::warning('OpenAI request timed out, using fallback extraction', [
+                    'timeout_type' => 'network_timeout'
+                ]);
+            }
+            
+            return $this->fallbackExtraction($content);
+        }
+    }
+
+    /**
+     * Analyze content using chunking strategy for large documents
+     */
+    private function analyzeContentWithChunking(string $content): array
+    {
+        Log::info('Using chunking strategy for large document', ['content_length' => strlen($content)]);
+        
+        // Split content into chunks of ~12KB each with overlap
+        $chunkSize = 12000;
+        $overlap = 2000;
+        $chunks = $this->splitContentIntoChunks($content, $chunkSize, $overlap);
+        
+        Log::info('Content split into chunks', [
+            'total_chunks' => count($chunks),
+            'chunk_sizes' => array_map('strlen', $chunks)
+        ]);
+
+        $allExtractedFields = [];
+        $allResponses = [];
+        $successfulChunks = 0;
+
+        foreach ($chunks as $index => $chunk) {
+            try {
+                Log::info("Processing chunk {$index}", ['chunk_size' => strlen($chunk)]);
+                
+                $chunkResult = $this->analyzeSingleChunk($chunk, $index, count($chunks));
+                
+                if (!empty($chunkResult['extracted_fields'])) {
+                    $allExtractedFields[] = $chunkResult['extracted_fields'];
+                    $allResponses[] = $chunkResult['ai_response'] ?? '';
+                    $successfulChunks++;
+                }
+                
+                // Add small delay between requests to avoid rate limiting
+                if ($index < count($chunks) - 1) {
+                    usleep(500000); // 0.5 second delay
+                }
+                
+            } catch (Exception $e) {
+                Log::warning("Failed to process chunk {$index}", [
+                    'error' => $e->getMessage(),
+                    'chunk_size' => strlen($chunk)
+                ]);
+                continue;
+            }
+        }
+
+        // Merge results from all chunks
+        $mergedFields = $this->mergeChunkResults($allExtractedFields);
+        
+        Log::info('Chunking analysis completed', [
+            'successful_chunks' => $successfulChunks,
+            'total_chunks' => count($chunks),
+            'merged_fields_count' => count($mergedFields)
+        ]);
+
+        return [
+            'extracted_fields' => $mergedFields,
+            'confidence_score' => $this->calculateConfidenceScore($mergedFields),
+            'raw_text' => substr($content, 0, 1000),
+            'analysis_timestamp' => now()->toISOString(),
+            'ai_model' => 'gpt-4o-mini-chunked',
+            'ai_response' => 'Chunked analysis: ' . $successfulChunks . '/' . count($chunks) . ' chunks processed successfully',
+        ];
+    }
+
+    /**
+     * Analyze a single document (for smaller content)
+     */
+    private function analyzeSingleDocument(string $content): array
+    {
+        $systemPrompt = $this->getSystemPrompt();
+        $userPrompt = $this->getUserPrompt($content);
+
+        // Validate that the content can be JSON encoded before sending to OpenAI
+        $testPayload = [
+            'model' => 'gpt-4o-mini',
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt]
+            ]
+        ];
+        
+        $jsonTest = json_encode($testPayload);
+        if ($jsonTest === false) {
+            $jsonError = json_last_error_msg();
+            Log::error('JSON encoding failed for OpenAI payload', [
+                'json_error' => $jsonError,
+                'json_error_code' => json_last_error(),
+                'content_length' => strlen($content),
+                'user_prompt_length' => strlen($userPrompt)
+            ]);
+            throw new Exception("JSON encoding failed: {$jsonError}");
+        }
+
+        $response = $this->makeOpenAIRequest($systemPrompt, $userPrompt);
+
+        if ($response['success']) {
+            $extractedFields = $this->parseAIResponse($response['ai_response']);
+            
+            return [
+                'extracted_fields' => $extractedFields,
+                'confidence_score' => $this->calculateConfidenceScore($extractedFields),
+                'raw_text' => substr($content, 0, 1000),
+                'analysis_timestamp' => now()->toISOString(),
+                'ai_model' => 'gpt-4o-mini',
+                'ai_response' => $response['ai_response'],
+            ];
+        } else {
+            return $this->fallbackExtraction($content);
+        }
+    }
+
+    /**
+     * Split content into chunks with overlap
+     */
+    private function splitContentIntoChunks(string $content, int $chunkSize, int $overlap): array
+    {
+        $chunks = [];
+        $contentLength = strlen($content);
+        $position = 0;
+
+        while ($position < $contentLength) {
+            $chunk = substr($content, $position, $chunkSize);
+            $chunks[] = $chunk;
+            
+            // Move position forward by chunkSize minus overlap
+            $position += ($chunkSize - $overlap);
+            
+            // If remaining content is smaller than overlap, include it all in the last chunk
+            if ($contentLength - $position < $overlap) {
+                break;
+            }
+        }
+
+        return $chunks;
+    }
+
+    /**
+     * Analyze a single chunk
+     */
+    private function analyzeSingleChunk(string $chunk, int $chunkIndex, int $totalChunks): array
+    {
+        $systemPrompt = $this->getChunkSystemPrompt($chunkIndex, $totalChunks);
+        $userPrompt = $this->getChunkUserPrompt($chunk, $chunkIndex, $totalChunks);
+
+        $response = $this->makeOpenAIRequest($systemPrompt, $userPrompt);
+
+        if ($response['success']) {
+            $extractedFields = $this->parseAIResponse($response['ai_response']);
+            return [
+                'extracted_fields' => $extractedFields,
+                'ai_response' => $response['ai_response']
+            ];
+        }
+
+        return ['extracted_fields' => [], 'ai_response' => ''];
+    }
+
+    /**
+     * Make OpenAI API request with enhanced error handling
+     */
+    private function makeOpenAIRequest(string $systemPrompt, string $userPrompt): array
+    {
+        $openaiApiKey = config('services.openai.api_key');
+        $timeout = config('services.openai.timeout', 300);
+        $connectTimeout = config('services.openai.connect_timeout', 30);
+        $retryAttempts = config('services.openai.retry_attempts', 3);
+        
+        Log::info('Starting OpenAI API request', [
+            'timeout' => $timeout,
+            'connect_timeout' => $connectTimeout,
+            'retry_attempts' => $retryAttempts,
+            'user_prompt_length' => strlen($userPrompt)
+        ]);
+        
+        try {
             $response = Http::timeout($timeout)
                 ->connectTimeout($connectTimeout)
-                ->retry($retryAttempts, 1000) // Retry 3 times with 1 second delay
+                ->retry($retryAttempts, 2000, function ($exception, $request) {
+                    // Retry on timeout and rate limit errors
+                    if ($exception instanceof \Illuminate\Http\Client\RequestException) {
+                        $status = $exception->response?->status();
+                        return in_array($status, [408, 429, 502, 503, 504]);
+                    }
+                    return strpos($exception->getMessage(), 'timeout') !== false;
+                })
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $openaiApiKey,
                     'Content-Type' => 'application/json',
@@ -363,52 +544,91 @@ class DocumentController extends Controller
                     'ai_response_length' => strlen($aiResponse)
                 ]);
                 
-                // Parse the AI response
-                $extractedFields = $this->parseAIResponse($aiResponse);
-                
                 return [
-                    'extracted_fields' => $extractedFields,
-                    'confidence_score' => $this->calculateConfidenceScore($extractedFields),
-                    'raw_text' => substr($content, 0, 1000),
-                    'analysis_timestamp' => now()->toISOString(),
-                    'ai_model' => 'gpt-4o-mini',
-                    'ai_response' => $aiResponse,
+                    'success' => true,
+                    'ai_response' => $aiResponse
                 ];
             } else {
-                Log::error('OpenAI API call failed, falling back to basic extraction', [
+                Log::error('OpenAI API call failed', [
                     'status' => $response->status(),
                     'response_body' => $response->body(),
-                    'response_headers' => $response->headers(),
-                    'request_timeout' => $timeout,
-                    'connect_timeout' => $connectTimeout
+                    'response_headers' => $response->headers()
                 ]);
-                return $this->fallbackExtraction($content);
+                return ['success' => false, 'ai_response' => ''];
             }
 
         } catch (Exception $e) {
-            Log::error('OpenAI analysis error', [
+            Log::error('OpenAI API request exception', [
                 'error_message' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'error_file' => $e->getFile(),
-                'error_line' => $e->getLine(),
-                'timeout_config' => $timeout,
-                'connect_timeout_config' => $connectTimeout,
-                'trace' => $e->getTraceAsString()
+                'error_code' => $e->getCode()
             ]);
-            
-            // Check if it's a timeout error
-            if (strpos($e->getMessage(), 'timeout') !== false || 
-                strpos($e->getMessage(), 'Maximum execution time') !== false ||
-                strpos($e->getMessage(), 'Connection timed out') !== false ||
-                strpos($e->getMessage(), 'cURL error 28') !== false) {
-                Log::warning('OpenAI request timed out, using fallback extraction', [
-                    'timeout_type' => 'network_timeout',
-                    'configured_timeout' => $timeout
-                ]);
-            }
-            
-            return $this->fallbackExtraction($content);
+            return ['success' => false, 'ai_response' => ''];
         }
+    }
+
+    /**
+     * Merge results from multiple chunks
+     */
+    private function mergeChunkResults(array $allExtractedFields): array
+    {
+        $merged = [];
+        
+        foreach ($allExtractedFields as $chunkFields) {
+            foreach ($chunkFields as $key => $value) {
+                if (!isset($merged[$key])) {
+                    $merged[$key] = $value;
+                } else {
+                    // For arrays, merge them
+                    if (is_array($value) && is_array($merged[$key])) {
+                        $merged[$key] = array_unique(array_merge($merged[$key], $value));
+                    }
+                    // For strings, prefer non-empty values or combine them intelligently
+                    elseif (is_string($value) && is_string($merged[$key])) {
+                        if (empty($merged[$key]) && !empty($value)) {
+                            $merged[$key] = $value;
+                        } elseif (!empty($value) && !empty($merged[$key]) && $value !== $merged[$key]) {
+                            // Combine different string values if they're not identical
+                            $merged[$key] = $merged[$key] . '; ' . $value;
+                        }
+                    }
+                    // For other types, prefer non-empty/non-zero values
+                    else {
+                        if (empty($merged[$key]) && !empty($value)) {
+                            $merged[$key] = $value;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return $merged;
+    }
+
+    /**
+     * Get system prompt for chunk analysis
+     */
+    private function getChunkSystemPrompt(int $chunkIndex, int $totalChunks): string
+    {
+        $basePrompt = $this->getSystemPrompt();
+        
+        return $basePrompt . "\n\nIMPORTANT: This is chunk " . ($chunkIndex + 1) . " of {$totalChunks} from a larger document. Extract all information you can find in this chunk, even if it seems incomplete. The chunks will be merged later.";
+    }
+
+    /**
+     * Get user prompt for chunk analysis
+     */
+    private function getChunkUserPrompt(string $chunk, int $chunkIndex, int $totalChunks): string
+    {
+        // For chunks, don't truncate as aggressively since we're already working with smaller pieces
+        $cleanChunk = $this->cleanUtf8Text($chunk);
+        
+        return "Please analyze this portion (chunk " . ($chunkIndex + 1) . " of {$totalChunks}) of an event planning document and extract all the relevant information into the specified JSON format.
+
+Here's the document chunk:
+
+" . $cleanChunk . "
+
+Extract all the information you can find in this chunk and return it in the exact JSON format specified in the system prompt.";
     }
 
     /**
@@ -529,9 +749,12 @@ Return ONLY the JSON object with these exact field names.";
      */
     private function getUserPrompt(string $content): string
     {
-        // Ensure content is clean and truncate safely to avoid UTF-8 issues
+        // Ensure content is clean and truncate intelligently to avoid UTF-8 issues
         $cleanContent = $this->cleanUtf8Text($content);
-        $truncatedContent = mb_substr($cleanContent, 0, 8000, 'UTF-8');
+        
+        // For single document analysis, use larger limit but still be reasonable
+        $maxLength = 12000; // Increased from 8000
+        $truncatedContent = mb_substr($cleanContent, 0, $maxLength, 'UTF-8');
         
         // Verify the truncated content is still valid UTF-8
         if (!mb_check_encoding($truncatedContent, 'UTF-8')) {
