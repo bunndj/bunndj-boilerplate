@@ -17,10 +17,10 @@ const Header: React.FC<HeaderProps> = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      
+
       // Close mobile menu first
       setIsMobileMenuOpen(false);
-      
+
       // Use setTimeout to ensure state updates are processed
       setTimeout(() => {
         navigate('/signin');

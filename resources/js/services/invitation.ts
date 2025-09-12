@@ -50,7 +50,7 @@ export const invitationService = {
     console.log('🔍 [InvitationService] Fetching invitation with ID:', id);
     const response = await fetch(`/api/invitations/${id}`);
     console.log('📡 [InvitationService] Response status:', response.status);
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ [InvitationService] Error response:', errorData);
@@ -64,7 +64,7 @@ export const invitationService = {
   // Accept invitation (requires authentication)
   async acceptInvitation(id: number): Promise<InvitationResponse> {
     console.log('🔍 [InvitationService] Accepting invitation with ID:', id);
-    
+
     try {
       const response = await apiClient.post(`/invitations/${id}/accept`);
       console.log('✅ [InvitationService] Accept success data:', response.data);
@@ -78,14 +78,17 @@ export const invitationService = {
   },
 
   // Register via invitation (public)
-  async registerViaInvitation(id: number, userData: {
-    name: string;
-    email: string;
-    username: string;
-    password: string;
-    password_confirmation: string;
-    phone?: string;
-  }): Promise<InvitationResponse> {
+  async registerViaInvitation(
+    id: number,
+    userData: {
+      name: string;
+      email: string;
+      username: string;
+      password: string;
+      password_confirmation: string;
+      phone?: string;
+    }
+  ): Promise<InvitationResponse> {
     const response = await fetch(`/api/register/invitation/${id}`, {
       method: 'POST',
       headers: {

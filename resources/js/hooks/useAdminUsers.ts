@@ -18,7 +18,7 @@ export const useAdminUser = (id: number) => {
 
 export const useCreateAdminUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (userData: any) => userService.createUser(userData),
     onSuccess: () => {
@@ -29,10 +29,9 @@ export const useCreateAdminUser = () => {
 
 export const useUpdateAdminUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      userService.updateUser(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => userService.updateUser(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       queryClient.invalidateQueries({ queryKey: ['adminUser', id] });
@@ -42,7 +41,7 @@ export const useUpdateAdminUser = () => {
 
 export const useDeleteAdminUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: number) => userService.deleteUser(id),
     onSuccess: () => {
@@ -53,7 +52,7 @@ export const useDeleteAdminUser = () => {
 
 export const useToggleUserStatus = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: number) => userService.toggleUserStatus(id),
     onSuccess: () => {
@@ -64,9 +63,9 @@ export const useToggleUserStatus = () => {
 
 export const useBulkUserAction = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ userIds, action }: { userIds: number[]; action: string }) => 
+    mutationFn: ({ userIds, action }: { userIds: number[]; action: string }) =>
       userService.bulkUserAction(userIds, action),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });

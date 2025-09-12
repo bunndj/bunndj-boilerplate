@@ -12,6 +12,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Api\ChatProgressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +87,13 @@ Route::middleware('auth:sanctum')->group(function () {
         // Client document upload routes
         Route::post('/client/events/{event}/documents/upload', [DocumentController::class, 'uploadAndParseForClient']);
         Route::post('/client/events/{event}/documents/parse-notes', [DocumentController::class, 'parseNotesForClient']);
+        
+        // Client chat progress routes
+        Route::get('/client/events/{event}/chat-progress', [ChatProgressController::class, 'show']);
+        Route::post('/client/events/{event}/chat-progress', [ChatProgressController::class, 'store']);
+        Route::post('/client/events/{event}/chat-progress/reset', [ChatProgressController::class, 'reset']);
+        Route::post('/client/events/{event}/chat-progress/fill-forms', [ChatProgressController::class, 'fillFormsFromChat']);
+        Route::get('/client/events/{event}/chat-forms', [ChatProgressController::class, 'getFormData']);
     });
 
     // Invitation acceptance (requires authentication)

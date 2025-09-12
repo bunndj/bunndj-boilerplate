@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Mail, Calendar, MapPin, User, AlertCircle } from 'lucide-react';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Mail,
+  Calendar,
+  MapPin,
+  User,
+  AlertCircle,
+} from 'lucide-react';
 import { invitationService } from '@/services/invitation';
 import { useAuth } from '@/hooks';
 import { useNotificationHelpers } from '@/hooks';
@@ -12,23 +21,27 @@ const InvitationPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useNotificationHelpers();
   const navigate = useNavigate();
-  
+
   console.log('🔍 [Invitation] Component state:', { id, isAuthenticated, user: user?.email });
-  
+
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
 
   useEffect(() => {
-    console.log('🔍 [Invitation] useEffect triggered with:', { id, isAuthenticated, user: user?.email });
+    console.log('🔍 [Invitation] useEffect triggered with:', {
+      id,
+      isAuthenticated,
+      user: user?.email,
+    });
     if (id) {
       console.log('🔍 [Invitation] Component mounted with ID:', id);
       console.log('🔍 [Invitation] Current auth state:', {
         isAuthenticated,
-        user: user ? { id: user.id, email: user.email, role: user.role } : null
+        user: user ? { id: user.id, email: user.email, role: user.role } : null,
       });
-      
+
       // Only fetch invitation if we have the ID, regardless of auth state
       // The invitation data is needed to show the page content
       fetchInvitation();
@@ -56,7 +69,7 @@ const InvitationPage: React.FC = () => {
     console.log('🔍 [Invitation] handleAcceptInvitation called with state:', {
       invitation: invitation ? { id: invitation.id, client_email: invitation.client_email } : null,
       isAuthenticated,
-      user: user ? { id: user.id, email: user.email, role: user.role } : null
+      user: user ? { id: user.id, email: user.email, role: user.role } : null,
     });
 
     if (!invitation) {
@@ -81,21 +94,24 @@ const InvitationPage: React.FC = () => {
         userEmail: user?.email,
         invitationEmail: invitation.client_email,
         isAuthenticated,
-        user
+        user,
       });
-      
+
       await invitationService.acceptInvitation(invitation.id);
-      
+
       console.log('✅ [Invitation] Invitation accepted successfully');
       showSuccess('Invitation Accepted!', 'You can now access your event details.');
-      
+
       // Redirect to client events page
       setTimeout(() => {
         navigate('/client/events');
       }, 2000);
     } catch (err) {
       console.error('❌ [Invitation] Error accepting invitation:', err);
-      showError('Acceptance Failed', err instanceof Error ? err.message : 'Failed to accept invitation');
+      showError(
+        'Acceptance Failed',
+        err instanceof Error ? err.message : 'Failed to accept invitation'
+      );
     } finally {
       setAccepting(false);
     }
@@ -166,21 +182,21 @@ const InvitationPage: React.FC = () => {
         icon: CheckCircle,
         text: 'Accepted',
         color: 'text-green-600 bg-green-100',
-        description: 'You have already accepted this invitation.'
+        description: 'You have already accepted this invitation.',
       };
     } else if (invitation.status === 'expired') {
       return {
         icon: XCircle,
         text: 'Expired',
         color: 'text-red-600 bg-red-100',
-        description: 'This invitation has expired. Please contact your DJ for a new invitation.'
+        description: 'This invitation has expired. Please contact your DJ for a new invitation.',
       };
     } else {
       return {
         icon: Clock,
         text: 'Pending',
         color: 'text-blue-600 bg-blue-100',
-        description: 'This invitation is waiting for your acceptance.'
+        description: 'This invitation is waiting for your acceptance.',
       };
     }
   };
@@ -193,7 +209,9 @@ const InvitationPage: React.FC = () => {
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand animate-fade-in">Event Invitation</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand animate-fade-in">
+            Event Invitation
+          </h1>
           <p className="text-gray-300">You've been invited to collaborate on an event</p>
         </div>
 
@@ -203,17 +221,18 @@ const InvitationPage: React.FC = () => {
             {/* Event Information */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">{invitation.event.name}</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center">
                   <Calendar className="w-5 h-5 text-gray-400 mr-3" />
                   <span className="text-gray-300">{formatDate(invitation.event.event_date)}</span>
                 </div>
-                
+
                 <div className="flex items-center">
                   <MapPin className="w-5 h-5 text-gray-400 mr-3" />
                   <span className="text-gray-300">
-                    {invitation.event.venue_name}, {invitation.event.venue_city}, {invitation.event.venue_state}
+                    {invitation.event.venue_name}, {invitation.event.venue_city},{' '}
+                    {invitation.event.venue_state}
                   </span>
                 </div>
               </div>
@@ -240,16 +259,16 @@ const InvitationPage: React.FC = () => {
             {/* Status Card */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Invitation Status</h3>
-              
+
               <div className="flex items-center mb-4">
                 <StatusIcon className="w-6 h-6 mr-3" />
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}>
                   {statusInfo.text}
                 </span>
               </div>
-              
+
               <p className="text-gray-600 text-sm mb-4">{statusInfo.description}</p>
-              
+
               {invitation.status === 'pending' && (
                 <div className="space-y-3">
                   {!isAuthenticated ? (
@@ -279,12 +298,15 @@ const InvitationPage: React.FC = () => {
                         <div>
                           <p className="text-sm text-yellow-800 font-medium">Email Mismatch</p>
                           <p className="text-sm text-yellow-700 mt-1">
-                            This invitation is for {invitation.client_email}, but you are signed in as {user?.email}.
-                            Please sign out and sign in with the correct email address.
+                            This invitation is for {invitation.client_email}, but you are signed in
+                            as {user?.email}. Please sign out and sign in with the correct email
+                            address.
                           </p>
                           <button
                             onClick={() => {
-                              console.log('🔍 [Invitation] Redirecting to signin for email mismatch');
+                              console.log(
+                                '🔍 [Invitation] Redirecting to signin for email mismatch'
+                              );
                               navigate(`/signin?redirect=/invitation/${id}`);
                             }}
                             className="mt-2 text-sm text-yellow-800 hover:text-yellow-900 font-medium underline"
@@ -305,7 +327,7 @@ const InvitationPage: React.FC = () => {
                   )}
                 </div>
               )}
-              
+
               {invitation.status === 'accepted' && (
                 <button
                   onClick={() => navigate('/client/events')}

@@ -162,6 +162,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'organization' => 'nullable|string|max:255',
             'website' => 'nullable|string|max:255',
+            'calendar_link' => 'nullable|url|max:255',
             'cell_phone' => 'nullable|string|max:255',
             'home_phone' => 'nullable|string|max:255',
             'work_phone' => 'nullable|string|max:255',

@@ -6,7 +6,10 @@ export const authService = {
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
     if (credentials.invitation_id) {
       // Use invitation-based registration endpoint
-      const response = await apiClient.post(`/register/invitation/${credentials.invitation_id}`, credentials);
+      const response = await apiClient.post(
+        `/register/invitation/${credentials.invitation_id}`,
+        credentials
+      );
       return response.data;
     } else {
       // Use regular registration endpoint

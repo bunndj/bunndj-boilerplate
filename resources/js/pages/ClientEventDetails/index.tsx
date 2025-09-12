@@ -1,19 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MapPin, User, Phone, Mail, MessageCircle, FileText, Music, Clock3, ArrowLeft, Upload, Check, X, Plus, Edit } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Phone,
+  Mail,
+  MessageCircle,
+  FileText,
+  Music,
+  Clock3,
+  ArrowLeft,
+  Upload,
+  Check,
+  X,
+  Plus,
+  Edit,
+} from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { eventService } from '@/services/event';
+import apiClient from '@/services/api-client';
 import { useClientEventPlanning, useSaveClientEventPlanning } from '@/hooks/useClientEventPlanning';
-import { useClientEventMusicIdeas, useSaveClientEventMusicIdeas } from '@/hooks/useClientEventMusicIdeas';
+import {
+  useClientEventMusicIdeas,
+  useSaveClientEventMusicIdeas,
+} from '@/hooks/useClientEventMusicIdeas';
 import { useClientEventTimeline, useSaveClientEventTimeline } from '@/hooks/useClientEventTimeline';
+import { useQueryClient } from '@tanstack/react-query';
 import PlanningForm from '@/pages/EventPlanning/components/PlanningForm';
 import MusicIdeasForm from '@/pages/EventPlanning/components/MusicIdeasForm';
 import TimelineForm from '@/pages/EventPlanning/components/TimelineForm';
 import ClientChat from '@/components/ClientChat';
 import DocumentUploadModal from '@/components/DocumentUploadModal';
+import FormDataCards from '@/components/FormDataCards';
 import { PlanningFormData, MusicIdeasFormData, TimelineFormData } from '@/types';
 import { AIFormFiller } from '@/utils/aiFormFiller';
-import { documentService } from '@/services/document';
 
 interface EventDetails {
   id: number;
@@ -74,22 +96,42 @@ function ClientEventDetails() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const eventId = id ? parseInt(id, 10) : 0;
 
   // State for event data and loading
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<EventDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // State for forms and chat
   const [showPlanningForm, setShowPlanningForm] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
-  
+
   // State for AI-filled data
   const [aiFilledPlanningData, setAiFilledPlanningData] = useState<PlanningFormData | null>(null);
   const [aiFilledMusicData, setAiFilledMusicData] = useState<MusicIdeasFormData | null>(null);
   const [aiFilledTimelineData, setAiFilledTimelineData] = useState<TimelineFormData | null>(null);
+  const [formUpdateKey, setFormUpdateKey] = useState(0);
+
+  // State for chat progress
+  const [chatProgress, setChatProgress] = useState<any>(null);
+  const [isChatCompleted, setIsChatCompleted] = useState(false);
+
+  // Fetch chat progress
+  const fetchChatProgress = useCallback(async () => {
+    if (!eventId) return;
+
+    try {
+      const response = await apiClient.get(`/client/events/${eventId}/chat-progress`);
+      const data = response.data;
+      setChatProgress(data.chat_progress);
+      setIsChatCompleted(data.is_completed);
+    } catch (error) {
+      console.error('Error fetching chat progress:', error);
+    }
+  }, [eventId]);
 
   // Form data hooks
   const {
@@ -114,7 +156,8 @@ function ClientEventDetails() {
   const saveTimelineMutation = useSaveClientEventTimeline();
 
   // Check if there's any form data
-  const hasFormData = planningData?.planning_data || musicIdeasData?.music_ideas || timelineData?.timeline_data;
+  const hasFormData =
+    planningData?.planning_data || musicIdeasData?.music_ideas || timelineData?.timeline_data;
 
   // Load event data
   useEffect(() => {
@@ -122,24 +165,24 @@ function ClientEventDetails() {
       try {
         console.log('🔍 [ClientEventDetails] Fetching event data for ID:', eventId);
         setIsLoading(true);
-        const eventData = await eventService.getClientEvent(eventId);
+        const eventData = (await eventService.getClientEvent(eventId)) as unknown as EventDetails;
         console.log('✅ [ClientEventDetails] Event data received:', eventData);
         setEvent(eventData);
-        
+
         // Check if there's any form data to determine what to show
         const hasPlanningData = eventData.planning && eventData.planning.id;
         const hasMusicIdeas = eventData.music_ideas && eventData.music_ideas.id;
         const hasTimeline = eventData.timeline && eventData.timeline.id;
-        
+
         console.log('🔍 [ClientEventDetails] Form data check:', {
           hasPlanningData,
           hasMusicIdeas,
           hasTimeline,
           planning: eventData.planning,
           music_ideas: eventData.music_ideas,
-          timeline: eventData.timeline
+          timeline: eventData.timeline,
         });
-        
+
         if (hasPlanningData || hasMusicIdeas || hasTimeline) {
           console.log('✅ [ClientEventDetails] Form data exists, showing forms');
           setShowPlanningForm(true);
@@ -160,13 +203,17 @@ function ClientEventDetails() {
     }
   }, [eventId]);
 
-  // Update showPlanningForm when form data changes
+  // Fetch chat progress on component mount
   useEffect(() => {
-    if (planningData || musicIdeasData || timelineData) {
-      const hasAnyFormData = planningData?.planning_data || musicIdeasData?.music_ideas || timelineData?.timeline_data;
-      setShowPlanningForm(hasAnyFormData);
+    if (eventId) {
+      fetchChatProgress();
     }
-  }, [planningData, musicIdeasData, timelineData]);
+  }, [eventId, fetchChatProgress]);
+
+  // Update showPlanningForm based on chat completion status
+  useEffect(() => {
+    setShowPlanningForm(isChatCompleted);
+  }, [isChatCompleted]);
 
   // Helper function to extract time from ISO string without timezone conversion
   const extractTimeFromISO = (isoString: string | null | undefined) => {
@@ -260,9 +307,17 @@ function ClientEventDetails() {
 
   const handleDocumentProcessed = async (parsedData: any) => {
     try {
-      console.log('=== DOCUMENT PROCESSING START ===');
-      console.log('Parsed data received:', parsedData);
-      
+      console.log('🔵 [CLIENT-DOC] === DOCUMENT PROCESSING START ===');
+      console.log('🔵 [CLIENT-DOC] Parsed data received:', {
+        hasExtractedFields: !!parsedData?.extracted_fields,
+        extractedFieldsCount: Object.keys(parsedData?.extracted_fields || {}).length,
+        hasTimelineItems: !!parsedData?.timeline_items,
+        timelineItemsCount: parsedData?.timeline_items?.length || 0,
+        confidenceScore: parsedData?.confidence_score,
+        isChatCompleted: isChatCompleted,
+        fullParsedData: parsedData,
+      });
+
       // Create default data structures if they don't exist
       const defaultPlanningData: PlanningFormData = {
         mailingAddress: '',
@@ -314,7 +369,7 @@ function ClientEventDetails() {
         spotifyPlaylists: '',
         lineDances: '',
         takeRequests: '',
-        musicNotes: ''
+        musicNotes: '',
       };
 
       const defaultMusicData: MusicIdeasFormData = {
@@ -323,63 +378,100 @@ function ClientEventDetails() {
         dedication: [],
         play_only_if_requested: [],
         do_not_play: [],
-        guest_request: []
+        guest_request: [],
       };
 
       const defaultTimelineData: TimelineFormData = {
-        timeline_items: []
+        timeline_items: [],
       };
-      
+
       // Apply AI-extracted data to all forms
-      console.log('Processing planning form...');
+      console.log('🔵 [CLIENT-DOC] Processing planning form...');
+      console.log(
+        '🔵 [CLIENT-DOC] Current planning data before merge:',
+        planningData?.planning_data
+      );
+
       const filledPlanningData = AIFormFiller.fillPlanningForm(
         planningData?.planning_data || defaultPlanningData,
         parsedData
       );
-      
-      console.log('Filled planning data:', filledPlanningData);
-      
+
+      console.log('🟢 [CLIENT-DOC] Filled planning data:', filledPlanningData);
+
       // Set AI-filled data in state
       setAiFilledPlanningData(filledPlanningData);
-      
-      // Save to backend - this will trigger a re-fetch and update the UI
-      await handlePlanningFormSave(filledPlanningData);
 
-      console.log('Processing music ideas form...');
+      // Save to backend - this will trigger a re-fetch and update the UI
+      console.log('🔵 [CLIENT-DOC] Saving planning data to backend...');
+      await handlePlanningFormSave(filledPlanningData);
+      console.log('🟢 [CLIENT-DOC] Planning data saved to backend');
+
+      console.log('🔵 [CLIENT-DOC] Processing music ideas form...');
+      console.log('🔵 [CLIENT-DOC] Current music data before merge:', musicIdeasData?.music_ideas);
+
       const filledMusicData = AIFormFiller.fillMusicIdeasForm(
         musicIdeasData?.music_ideas || defaultMusicData,
         parsedData
       );
-      
-      console.log('Filled music data:', filledMusicData);
-      
+
+      console.log('🟢 [CLIENT-DOC] Filled music data:', filledMusicData);
+
       // Set AI-filled data in state
       setAiFilledMusicData(filledMusicData);
-      
-      // Save to backend
-      await handleMusicIdeasSave(filledMusicData);
 
-      console.log('Processing timeline form...');
+      // Save to backend
+      console.log('🔵 [CLIENT-DOC] Saving music data to backend...');
+      await handleMusicIdeasSave(filledMusicData);
+      console.log('🟢 [CLIENT-DOC] Music data saved to backend');
+
+      console.log('🔵 [CLIENT-DOC] Processing timeline form...');
+      console.log(
+        '🔵 [CLIENT-DOC] Current timeline data before merge:',
+        timelineData?.timeline_data
+      );
+
       const filledTimelineData = AIFormFiller.fillTimelineForm(
         timelineData?.timeline_data || defaultTimelineData,
         parsedData
       );
-      
-      console.log('Filled timeline data:', filledTimelineData);
-      
+
+      console.log('🟢 [CLIENT-DOC] Filled timeline data:', filledTimelineData);
+      console.log(
+        '🟢 [CLIENT-DOC] Timeline items count:',
+        filledTimelineData.timeline_items?.length
+      );
+
       // Set AI-filled data in state
       setAiFilledTimelineData(filledTimelineData);
-      
-      // Save to backend
-      await handleTimelineSave(filledTimelineData);
 
-      console.log('=== DOCUMENT PROCESSING COMPLETE ===');
-      
-      // Transition to forms after successful document processing
-      handleDocumentProcessingComplete();
-      
+      // Save to backend
+      console.log('🔵 [CLIENT-DOC] Saving timeline data to backend...');
+      await handleTimelineSave(filledTimelineData);
+      console.log('🟢 [CLIENT-DOC] Timeline data saved to backend');
+
+      console.log('🟢 [CLIENT-DOC] === DOCUMENT PROCESSING COMPLETE ===');
+
+      // Only transition to forms if chat is already completed
+      // During chat workflow, just save the data and continue with chat
+      console.log('🔵 [CLIENT-DOC] Checking chat completion status:', {
+        isChatCompleted: isChatCompleted,
+        willTransitionToForms: isChatCompleted,
+      });
+
+      if (isChatCompleted) {
+        console.log('🔵 [CLIENT-DOC] Chat completed, calling handleDocumentProcessingComplete');
+        handleDocumentProcessingComplete();
+      } else {
+        console.log('🟡 [CLIENT-DOC] Chat not completed, staying in chat workflow');
+      }
     } catch (error) {
-      console.error('Error applying AI-extracted data:', error);
+      console.error('🔴 [CLIENT-DOC] Error applying AI-extracted data:', error);
+      console.error('🔴 [CLIENT-DOC] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        parsedData: parsedData,
+      });
     }
   };
 
@@ -400,9 +492,53 @@ function ClientEventDetails() {
     setIsDocumentUploadModalOpen(true);
   };
 
-  const handleDocumentProcessingComplete = () => {
-    // Transition from chat to forms after document processing
-    setShowPlanningForm(true);
+  const handleDocumentProcessingComplete = (filledData?: any) => {
+    console.log('🔵 [DOC-COMPLETE] Document processing complete callback triggered');
+    console.log('🔵 [DOC-COMPLETE] Filled data received:', {
+      hasFilledData: !!filledData,
+      hasPlanningData: !!filledData?.planning_data,
+      hasMusicData: !!filledData?.music_data,
+      hasTimelineData: !!filledData?.timeline_data,
+      filledData: filledData,
+    });
+
+    // Mark chat as completed
+    setIsChatCompleted(true);
+    console.log('🔵 [DOC-COMPLETE] Marked chat as completed');
+
+    // If we have filled data from chat, set it in state
+    if (filledData) {
+      console.log('🔵 [DOC-COMPLETE] Setting filled data in state');
+
+      if (filledData.planning_data) {
+        setAiFilledPlanningData(filledData.planning_data);
+        console.log('🔵 [DOC-COMPLETE] Set planning data');
+      }
+      if (filledData.music_data) {
+        setAiFilledMusicData(filledData.music_data);
+        console.log('🔵 [DOC-COMPLETE] Set music data');
+      }
+      if (filledData.timeline_data) {
+        setAiFilledTimelineData(filledData.timeline_data);
+        console.log('🔵 [DOC-COMPLETE] Set timeline data');
+      }
+
+      // Force form re-render
+      setFormUpdateKey(prev => prev + 1);
+      console.log('🔵 [DOC-COMPLETE] Updated form key to trigger re-render');
+    }
+
+    // Invalidate and refetch form data to ensure forms are updated
+    console.log('🔵 [DOC-COMPLETE] Invalidating React Query caches');
+    queryClient.invalidateQueries({ queryKey: ['client-event-planning', eventId] });
+    queryClient.invalidateQueries({ queryKey: ['client-event-music-ideas', eventId] });
+    queryClient.invalidateQueries({ queryKey: ['client-event-timeline', eventId] });
+
+    // Refresh chat progress to get updated completion status
+    console.log('🔵 [DOC-COMPLETE] Fetching updated chat progress');
+    fetchChatProgress();
+
+    console.log('🟢 [DOC-COMPLETE] Document processing complete callback finished');
   };
 
   const isFormLoading = planningLoading || musicIdeasLoading || timelineLoading;
@@ -424,9 +560,7 @@ function ClientEventDetails() {
       <div className="bg-secondary flex items-center justify-center">
         <div className="text-center">
           <h3 className="text-lg font-semibold text-white mb-2">Error Loading Event</h3>
-          <p className="text-gray-600 mb-4">
-            {error}
-          </p>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => navigate('/client/events')}
             className="bg-brand hover:bg-brand-dark text-secondary font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
@@ -507,124 +641,34 @@ function ClientEventDetails() {
         {/* Conditional Content: Forms or Chat */}
         {showPlanningForm ? (
           <div className="space-y-4 sm:space-y-6">
-            {/* Save Status Header */}
+            {/* Completion Header */}
             <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 hover-lift animate-scale-in">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 animate-fade-in">
-                    Event Planning
+                    🎉 Chat Workflow Completed!
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600 animate-slide-up animation-delay-100">
-                    Plan your perfect wedding day with our comprehensive tools!
+                    Here's a summary of all the information you provided during our chat.
                   </p>
                 </div>
-                <div className="flex items-center justify-start sm:justify-end space-x-3">
-                  {/* Save Status Indicators */}
-                  {saveStatus === 'saving' && (
-                    <div className="flex items-center text-blue-600">
-                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-blue-600 mr-2"></div>
-                      <span className="text-xs sm:text-sm">Saving...</span>
-                    </div>
-                  )}
-                  {saveStatus === 'success' && (
-                    <div className="flex items-center text-green-600">
-                      <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                      <span className="text-xs sm:text-sm">Saved successfully!</span>
-                    </div>
-                  )}
-                  {saveStatus === 'error' && (
-                    <div className="flex items-center text-red-600">
-                      <X className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                      <span className="text-xs sm:text-sm">Error saving. Please try again.</span>
-                    </div>
-                  )}
+                <div className="flex items-center text-green-600">
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  <span className="text-xs sm:text-sm font-medium">All Done!</span>
                 </div>
               </div>
             </div>
 
-            {/* Planning Sections Form */}
-            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-100">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50">
-                <div className="flex items-center space-x-2">
-                  <span className="text-base sm:text-lg">📋</span>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                      Planning Sections
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                      Fill out the details to help us plan your perfect day!
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <PlanningForm
-                onSave={handlePlanningFormSave}
-                initialData={aiFilledPlanningData || planningData?.planning_data || undefined}
-                key={`planning-${aiFilledPlanningData ? 'ai-filled' : planningData?.planning_data ? 'loaded' : 'default'}`}
-              />
-            </div>
-
-            {/* Music Ideas Form */}
-            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-200">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-purple-50">
-                <div className="flex items-center space-x-2">
-                  <span className="text-base sm:text-lg">🎵</span>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                      Music Ideas
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                      Add your music preferences and special song requests!
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <MusicIdeasForm
-                onSave={handleMusicIdeasSave}
-                initialData={aiFilledMusicData || musicIdeasData?.music_ideas || undefined}
-                key={`music-${aiFilledMusicData ? 'ai-filled' : musicIdeasData?.music_ideas ? 'loaded' : 'default'}`}
-              />
-            </div>
-
-            {/* Timeline Form */}
-            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-300">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-green-50">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-base sm:text-lg">⏰</span>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Timeline</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                        Plan your wedding day timeline with activities and time slots!
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between sm:justify-end space-x-3">
-                    <div className="text-xs text-gray-500 flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                      Auto-saving
-                    </div>
-                    
-                    <button
-                      id="timeline-add-activity-btn"
-                      className="px-3 py-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
-                    >
-                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Add Activity</span>
-                      <span className="sm:hidden">Add</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <TimelineForm
-                onSave={handleTimelineSave}
-                initialData={aiFilledTimelineData || timelineData?.timeline_data || undefined}
-                key={`timeline-${aiFilledTimelineData ? 'ai-filled' : timelineData?.timeline_data ? 'loaded' : 'default'}`}
-              />
-            </div>
+            {/* Form Data Cards - Read Only */}
+            <FormDataCards
+              planningData={aiFilledPlanningData || planningData?.planning_data || undefined}
+              musicData={aiFilledMusicData || musicIdeasData?.music_ideas || undefined}
+              timelineData={aiFilledTimelineData || timelineData?.timeline_data || undefined}
+            />
           </div>
         ) : (
           <ClientChat
+            eventId={eventId}
             onTimelineUpload={handleTimelineUpload}
             onStartQuestions={handleCreateEmptyPlanningRecord}
             onDocumentProcessed={handleDocumentProcessed}

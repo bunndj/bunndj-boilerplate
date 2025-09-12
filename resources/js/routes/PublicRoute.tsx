@@ -16,7 +16,7 @@ function PublicRoute({ children }: PublicRouteProps) {
     pathname: location.pathname,
     isAuthenticated,
     isLoading,
-    isInvitationPage: location.pathname.startsWith('/invitation/')
+    isInvitationPage: location.pathname.startsWith('/invitation/'),
   });
 
   if (isLoading) {

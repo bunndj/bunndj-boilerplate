@@ -1002,11 +1002,9 @@ Extract all the information you can find and return it in the exact JSON format 
                 'success' => true,
                 'message' => 'Document uploaded and parsed successfully',
                 'data' => [
-                    'document_id' => $document->id,
-                    'filename' => $originalFilename,
-                    'file_size' => $fileSize,
-                    'parsed_content' => $pdfContent,
-                    'ai_analysis' => $aiAnalysis
+                    'document' => $document,
+                    'parsed_data' => $aiAnalysis,
+                    's3_url' => Storage::disk('s3')->url($filePath)
                 ]
             ]);
 

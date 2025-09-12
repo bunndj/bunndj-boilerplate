@@ -18,29 +18,29 @@ export class AIFormFiller {
     const testExtractedData: ExtractedData = {
       extracted_fields: {
         guestCount: 150,
-        mailingAddress: "123 Wedding Lane, Love City, LC 12345",
-        coordinatorEmail: "planner@wedding.com",
-        ceremonyStartTime: "2:00 PM",
-        ceremonyLocation: "Beautiful Gardens Chapel",
-        officiantName: "Reverend Smith",
+        mailingAddress: '123 Wedding Lane, Love City, LC 12345',
+        coordinatorEmail: 'planner@wedding.com',
+        ceremonyStartTime: '2:00 PM',
+        ceremonyLocation: 'Beautiful Gardens Chapel',
+        officiantName: 'Reverend Smith',
         uplighting: true,
         photoBooth: true,
         isWedding: true,
         providingCeremonyMusic: true,
-        guestArrivalMusic: "classical",
+        guestArrivalMusic: 'classical',
         providingCeremonyMicrophones: true,
-        whoNeedsMic: "officiant only",
-        spotifyPlaylists: "https://open.spotify.com/playlist/123",
-        lineDances: "Electric Slide, Cupid Shuffle",
-        takeRequests: "yes",
+        whoNeedsMic: 'officiant only',
+        spotifyPlaylists: 'https://open.spotify.com/playlist/123',
+        lineDances: 'Electric Slide, Cupid Shuffle',
+        takeRequests: 'yes',
         songs: [
-          { title: "Perfect", artist: "Ed Sheeran", category: "must_play" },
-          { title: "All of Me", artist: "John Legend", category: "dedication" }
-        ]
+          { title: 'Perfect', artist: 'Ed Sheeran', category: 'must_play' },
+          { title: 'All of Me', artist: 'John Legend', category: 'dedication' },
+        ],
       },
       confidence_score: 95,
-      raw_text: "Test wedding planning document",
-      analysis_timestamp: new Date().toISOString()
+      raw_text: 'Test wedding planning document',
+      analysis_timestamp: new Date().toISOString(),
     };
 
     const testCurrentData: PlanningFormData = {
@@ -93,22 +93,22 @@ export class AIFormFiller {
       spotifyPlaylists: '',
       lineDances: '',
       takeRequests: '',
-      musicNotes: ''
+      musicNotes: '',
     };
 
     console.log('=== TESTING AIFormFiller ===');
     console.log('Test extracted data:', testExtractedData);
     console.log('Test current data:', testCurrentData);
-    
+
     const result = this.fillPlanningForm(testCurrentData, testExtractedData);
     console.log('Test result:', result);
-    
+
     // Check specific fields
     console.log('Guest count filled:', result.guestCount);
     console.log('Mailing address filled:', result.mailingAddress);
     console.log('Uplighting filled:', result.uplighting);
     console.log('Photo booth filled:', result.photoBooth);
-    
+
     return result;
   }
 
@@ -117,16 +117,16 @@ export class AIFormFiller {
    */
   private static convertTimeToTimeInputFormat(timeStr: string): string {
     if (!timeStr) return '';
-    
+
     console.log('Converting time:', timeStr);
-    
+
     // Handle various time formats
     const time = timeStr.toLowerCase().trim();
-    
+
     // Extract hours and minutes
     let hours = 0;
     let minutes = 0;
-    
+
     // Pattern 1: "5pm", "5:30pm", "17:30"
     const timePattern1 = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i;
     const match1 = time.match(timePattern1);
@@ -134,33 +134,34 @@ export class AIFormFiller {
       hours = parseInt(match1[1]);
       minutes = match1[2] ? parseInt(match1[2]) : 0;
       const period = match1[3].toLowerCase();
-      
+
       if (period === 'pm' && hours !== 12) {
         hours += 12;
       } else if (period === 'am' && hours === 12) {
         hours = 0;
       }
     }
-    
+
     // Pattern 2: "17:30", "17:30:00"
     const timePattern2 = /(\d{1,2}):(\d{2})(?::(\d{2}))?/;
     const match2 = time.match(timePattern2);
-    if (match2 && !match1) { // Only if pattern 1 didn't match
+    if (match2 && !match1) {
+      // Only if pattern 1 didn't match
       hours = parseInt(match2[1]);
       minutes = parseInt(match2[2]);
     }
-    
+
     // Pattern 3: Just "5" (assume PM for evening times)
     if (!match1 && !match2 && /^\d{1,2}$/.test(time)) {
       hours = parseInt(time);
       if (hours < 12) hours += 12; // Assume PM for single digits
     }
-    
+
     // Convert to HH:MM format
     const formattedHours = hours.toString().padStart(2, '0');
     const formattedMinutes = minutes.toString().padStart(2, '0');
     const result = `${formattedHours}:${formattedMinutes}`;
-    
+
     console.log(`Converted "${timeStr}" to "${result}" (${hours}:${minutes})`);
     return result;
   }
@@ -175,7 +176,7 @@ export class AIFormFiller {
   ): PlanningFormData {
     const fields = extractedData.extracted_fields;
     const filledData = { ...currentData };
-    
+
     // Clear existing data to prevent duplication
     console.log('Clearing existing planning form data to prevent duplication');
 
@@ -282,7 +283,7 @@ export class AIFormFiller {
     // Extract songs from the document using OpenAI categorization
     if (fields.songs && Array.isArray(fields.songs)) {
       console.log('Processing songs:', fields.songs);
-      
+
       // Clear existing song data to prevent duplication (only if not in append mode)
       if (!appendMode) {
         filledData.must_play = [];
@@ -292,16 +293,16 @@ export class AIFormFiller {
         filledData.do_not_play = [];
         filledData.guest_request = [];
       }
-      
+
       // OpenAI should have already categorized the songs
       fields.songs.forEach((song: any) => {
         // Ensure we get the full song title and artist (no truncation)
         let songTitle = song.title || song.song_title || '';
         const artistName = song.artist || '';
-        
+
         // Clean up song title - remove line breaks and excessive text
         songTitle = songTitle.replace(/\n/g, ' ').trim();
-        
+
         // If title is too long (likely not a real song), try to extract actual song info
         if (songTitle.length > 100) {
           // Look for common patterns like "Song Name - Artist" or "Song Name by Artist"
@@ -317,17 +318,17 @@ export class AIFormFiller {
             }
           }
         }
-        
+
         // Skip if title is still too long or contains timeline-like text
         if (songTitle.length > 255) {
           console.log('Skipping invalid song title:', songTitle);
           return;
         }
-        
+
         // Ensure title and artist are not too long for database (backend allows 500 chars but let's be safe)
         songTitle = songTitle.substring(0, 250).trim();
         const cleanArtist = artistName.substring(0, 250).trim();
-        
+
         const songData = {
           song_title: songTitle,
           artist: cleanArtist,
@@ -385,22 +386,22 @@ export class AIFormFiller {
     // Use OpenAI extracted timeline information
     if (fields.timeline_times && Array.isArray(fields.timeline_times)) {
       console.log('Timeline times found:', fields.timeline_times);
-      
+
       // Clear existing timeline data to prevent duplication (only if not in append mode)
       if (!appendMode) {
         filledData.timeline_items = [];
       }
-      
+
       // Create new timeline items from extracted times with meaningful names and calculated end times
       console.log('Creating new timeline items from extracted data');
-      
+
       // Sort times chronologically first
       const sortedTimes = [...fields.timeline_times].sort((a, b) => {
         const timeA = this.convertTimeToTimeInputFormat(a);
         const timeB = this.convertTimeToTimeInputFormat(b);
         return timeA.localeCompare(timeB);
       });
-      
+
       // Create new timeline items and append them to existing ones
       // Generate unique IDs that don't conflict with existing ones
       const existingIds = new Set(filledData.timeline_items.map(item => item.id));
@@ -414,17 +415,17 @@ export class AIFormFiller {
         existingIds.add(id);
         return id;
       };
-      
+
       const newTimelineItems = sortedTimes.map((time, index) => {
         const startTime = this.convertTimeToTimeInputFormat(time);
         let endTime = '';
-        
+
         // Calculate end time based on next event's start time
         if (index < sortedTimes.length - 1) {
           const nextTime = this.convertTimeToTimeInputFormat(sortedTimes[index + 1]);
           endTime = nextTime;
         }
-        
+
         // Create meaningful activity name from notes or generate descriptive name
         let activityName = '';
         if (fields.timeline_activities && fields.timeline_activities[index]) {
@@ -443,7 +444,7 @@ export class AIFormFiller {
             activityName = 'Evening Activity';
           }
         }
-        
+
         return {
           id: getUniqueId(),
           name: activityName,
@@ -451,10 +452,10 @@ export class AIFormFiller {
           end_time: endTime,
           notes: fields.timeline_activities?.[index] || '',
           time_offset: 0,
-          order: filledData.timeline_items.length + index
+          order: filledData.timeline_items.length + index,
         };
       });
-      
+
       // Append new timeline items to existing ones
       if (appendMode) {
         filledData.timeline_items = [...filledData.timeline_items, ...newTimelineItems];
@@ -467,9 +468,10 @@ export class AIFormFiller {
     if (fields.ceremonyStartTime) {
       console.log('Ceremony start time found:', fields.ceremonyStartTime);
       // Find and update the ceremony timeline item
-      const ceremonyItem = filledData.timeline_items.find(item => 
-        item.name.toLowerCase().includes('ceremony') || 
-        item.notes?.toLowerCase().includes('ceremony')
+      const ceremonyItem = filledData.timeline_items.find(
+        item =>
+          item.name.toLowerCase().includes('ceremony') ||
+          item.notes?.toLowerCase().includes('ceremony')
       );
       if (ceremonyItem) {
         ceremonyItem.start_time = this.convertTimeToTimeInputFormat(fields.ceremonyStartTime);
@@ -483,9 +485,10 @@ export class AIFormFiller {
     if (fields.cocktailHourStartTime) {
       console.log('Cocktail hour start time found:', fields.cocktailHourStartTime);
       // Find and update the cocktail hour timeline item
-      const cocktailItem = filledData.timeline_items.find(item => 
-        item.name.toLowerCase().includes('cocktail') || 
-        item.notes?.toLowerCase().includes('cocktail')
+      const cocktailItem = filledData.timeline_items.find(
+        item =>
+          item.name.toLowerCase().includes('cocktail') ||
+          item.notes?.toLowerCase().includes('cocktail')
       );
       if (cocktailItem) {
         cocktailItem.start_time = this.convertTimeToTimeInputFormat(fields.cocktailHourStartTime);
@@ -499,9 +502,9 @@ export class AIFormFiller {
     if (fields.dinnerStartTime) {
       console.log('Dinner start time found:', fields.dinnerStartTime);
       // Find and update the dinner timeline item
-      const dinnerItem = filledData.timeline_items.find(item => 
-        item.name.toLowerCase().includes('dinner') || 
-        item.notes?.toLowerCase().includes('dinner')
+      const dinnerItem = filledData.timeline_items.find(
+        item =>
+          item.name.toLowerCase().includes('dinner') || item.notes?.toLowerCase().includes('dinner')
       );
       if (dinnerItem) {
         dinnerItem.start_time = this.convertTimeToTimeInputFormat(fields.dinnerStartTime);
@@ -515,9 +518,10 @@ export class AIFormFiller {
     if (fields.receptionStartTime) {
       console.log('Reception start time found:', fields.receptionStartTime);
       // Find and update the reception timeline item
-      const receptionItem = filledData.timeline_items.find(item => 
-        item.name.toLowerCase().includes('reception') || 
-        item.notes?.toLowerCase().includes('reception')
+      const receptionItem = filledData.timeline_items.find(
+        item =>
+          item.name.toLowerCase().includes('reception') ||
+          item.notes?.toLowerCase().includes('reception')
       );
       if (receptionItem) {
         receptionItem.start_time = this.convertTimeToTimeInputFormat(fields.receptionStartTime);
@@ -527,9 +531,10 @@ export class AIFormFiller {
     if (fields.introductionsTime) {
       console.log('Introductions time found:', fields.introductionsTime);
       // Find and update the introductions timeline item
-      const introItem = filledData.timeline_items.find(item => 
-        item.name.toLowerCase().includes('introduction') || 
-        item.notes?.toLowerCase().includes('introduction')
+      const introItem = filledData.timeline_items.find(
+        item =>
+          item.name.toLowerCase().includes('introduction') ||
+          item.notes?.toLowerCase().includes('introduction')
       );
       if (introItem) {
         introItem.start_time = this.convertTimeToTimeInputFormat(fields.introductionsTime);
@@ -545,13 +550,12 @@ export class AIFormFiller {
    */
   private static extractTimeFromText(times: string[] | undefined): string {
     if (!times || times.length === 0) return '';
-    
+
     // Return the first time found, or try to find a ceremony time
-    const ceremonyTime = times.find(time => 
-      time.toLowerCase().includes('ceremony') || 
-      time.toLowerCase().includes('start')
+    const ceremonyTime = times.find(
+      time => time.toLowerCase().includes('ceremony') || time.toLowerCase().includes('start')
     );
-    
+
     return ceremonyTime || times[0];
   }
 
@@ -560,7 +564,7 @@ export class AIFormFiller {
    */
   private static generateCeremonyNotes(fields: Record<string, any>): string {
     const notes = [];
-    
+
     if (fields.venueLocation) {
       notes.push(`Venue: ${fields.venueLocation}`);
     }
@@ -580,9 +584,11 @@ export class AIFormFiller {
   private static detectUplighting(text: string): boolean {
     if (!text) return false;
     const lowerText = text.toLowerCase();
-    return lowerText.includes('uplighting') || 
-           lowerText.includes('up lighting') || 
-           lowerText.includes('ambient lighting');
+    return (
+      lowerText.includes('uplighting') ||
+      lowerText.includes('up lighting') ||
+      lowerText.includes('ambient lighting')
+    );
   }
 
   /**
@@ -591,9 +597,11 @@ export class AIFormFiller {
   private static detectPhotoBooth(text: string): boolean {
     if (!text) return false;
     const lowerText = text.toLowerCase();
-    return lowerText.includes('photo booth') || 
-           lowerText.includes('photobooth') || 
-           lowerText.includes('photo station');
+    return (
+      lowerText.includes('photo booth') ||
+      lowerText.includes('photobooth') ||
+      lowerText.includes('photo station')
+    );
   }
 
   /**
@@ -601,10 +609,10 @@ export class AIFormFiller {
    */
   private static extractSpotifyPlaylists(text: string): string {
     if (!text) return '';
-    
+
     const spotifyRegex = /(https?:\/\/open\.spotify\.com\/playlist\/[a-zA-Z0-9]+)/g;
     const matches = text.match(spotifyRegex);
-    
+
     return matches ? matches.join('\n') : '';
   }
 
@@ -613,16 +621,22 @@ export class AIFormFiller {
    */
   private static extractLineDances(text: string): string {
     if (!text) return '';
-    
+
     const lineDanceKeywords = [
-      'cupid shuffle', 'cha cha slide', 'wobble', 'electric slide',
-      'macarena', 'chicken dance', 'hokey pokey', 'y.m.c.a'
+      'cupid shuffle',
+      'cha cha slide',
+      'wobble',
+      'electric slide',
+      'macarena',
+      'chicken dance',
+      'hokey pokey',
+      'y.m.c.a',
     ];
-    
-    const foundDances = lineDanceKeywords.filter(dance => 
+
+    const foundDances = lineDanceKeywords.filter(dance =>
       text.toLowerCase().includes(dance.toLowerCase())
     );
-    
+
     return foundDances.length > 0 ? foundDances.join(', ') : '';
   }
 
@@ -631,7 +645,7 @@ export class AIFormFiller {
    */
   private static generateMusicNotes(fields: Record<string, any>): string {
     const notes = [];
-    
+
     if (fields.songs && fields.songs.length > 0) {
       notes.push(`Songs mentioned: ${fields.songs.length}`);
     }
@@ -647,9 +661,9 @@ export class AIFormFiller {
    */
   private static detectDinnerStyle(text: string): string {
     if (!text) return '';
-    
+
     const lowerText = text.toLowerCase();
-    
+
     if (lowerText.includes('plated') || lowerText.includes('sit down')) {
       return 'plated';
     } else if (lowerText.includes('buffet')) {
@@ -659,7 +673,7 @@ export class AIFormFiller {
     } else if (lowerText.includes('stations') || lowerText.includes('food stations')) {
       return 'food stations';
     }
-    
+
     return '';
   }
 
@@ -668,7 +682,7 @@ export class AIFormFiller {
    */
   private static generateReceptionNotes(fields: Record<string, any>): string {
     const notes = [];
-    
+
     if (fields.venueLocation) {
       notes.push(`Reception venue: ${fields.venueLocation}`);
     }
@@ -682,28 +696,34 @@ export class AIFormFiller {
   /**
    * Categorize songs based on context
    */
-  private static categorizeSongs(songs: any[], text: string): {
+  private static categorizeSongs(
+    songs: any[],
+    text: string
+  ): {
     mustPlay: any[];
     playIfPossible: any[];
     dedication: any[];
   } {
     const lowerText = text.toLowerCase();
-    
+
     return {
-      mustPlay: songs.filter(song => 
-        lowerText.includes('must') || 
-        lowerText.includes('essential') || 
-        lowerText.includes('required')
+      mustPlay: songs.filter(
+        song =>
+          lowerText.includes('must') ||
+          lowerText.includes('essential') ||
+          lowerText.includes('required')
       ),
-      playIfPossible: songs.filter(song => 
-        lowerText.includes('if possible') || 
-        lowerText.includes('optional') || 
-        lowerText.includes('nice to have')
+      playIfPossible: songs.filter(
+        song =>
+          lowerText.includes('if possible') ||
+          lowerText.includes('optional') ||
+          lowerText.includes('nice to have')
       ),
-      dedication: songs.filter(song => 
-        lowerText.includes('dedication') || 
-        lowerText.includes('special') || 
-        lowerText.includes('meaningful')
+      dedication: songs.filter(
+        song =>
+          lowerText.includes('dedication') ||
+          lowerText.includes('special') ||
+          lowerText.includes('meaningful')
       ),
     };
   }
@@ -711,7 +731,10 @@ export class AIFormFiller {
   /**
    * Extract timeline information from text
    */
-  private static extractTimelineInfo(text: string, times: string[] | undefined): Array<{
+  private static extractTimelineInfo(
+    text: string,
+    times: string[] | undefined
+  ): Array<{
     start_time: string;
     end_time: string;
     notes: string;
@@ -719,7 +742,7 @@ export class AIFormFiller {
     if (!times || times.length === 0) return [];
 
     const timelineInfo = [];
-    
+
     // Simple time extraction - in production, you'd use more sophisticated NLP
     for (let i = 0; i < times.length - 1; i++) {
       timelineInfo.push({
@@ -749,11 +772,11 @@ export class AIFormFiller {
     const fieldsFilled = Object.keys(filledData).filter(key => {
       const original = originalData[key];
       const filled = filledData[key];
-      
+
       if (Array.isArray(original) && Array.isArray(filled)) {
         return filled.length > original.length;
       }
-      
+
       return filled !== original && filled !== '' && filled !== null && filled !== undefined;
     });
 

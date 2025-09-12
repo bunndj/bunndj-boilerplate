@@ -8,6 +8,7 @@ export interface User {
   username: string;
   organization?: string;
   website?: string;
+  calendar_link?: string;
   home_phone?: string;
   cell_phone?: string;
   work_phone?: string;

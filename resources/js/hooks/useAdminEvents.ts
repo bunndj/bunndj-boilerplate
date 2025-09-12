@@ -18,10 +18,9 @@ export const useAdminEvent = (id: number) => {
 
 export const useUpdateAdminEvent = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      eventService.updateEvent(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => eventService.updateEvent(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['adminEvents'] });
       queryClient.invalidateQueries({ queryKey: ['adminEvent', id] });
@@ -31,7 +30,7 @@ export const useUpdateAdminEvent = () => {
 
 export const useDeleteAdminEvent = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: number) => eventService.deleteEvent(id),
     onSuccess: () => {

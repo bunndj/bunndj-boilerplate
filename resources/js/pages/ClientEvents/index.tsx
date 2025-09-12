@@ -112,7 +112,8 @@ function ClientEvents() {
             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">No Events Yet</h2>
             <p className="text-gray-600 mb-6">
-              You haven't been invited to any events yet. Your DJ will send you an invitation when they create an event for you.
+              You haven't been invited to any events yet. Your DJ will send you an invitation when
+              they create an event for you.
             </p>
             <Link
               to="/dashboard"
@@ -137,14 +138,15 @@ function ClientEvents() {
 
         {/* Events Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <div key={event.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+          {events.map(event => (
+            <div
+              key={event.id}
+              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            >
               {/* Event Header */}
               <div className="bg-gradient-to-r from-brand to-brand-dark p-4 text-white">
                 <h3 className="text-xl font-bold mb-1">{event.name}</h3>
-                <p className="text-brand-light text-sm">
-                  {formatDate(event.event_date)}
-                </p>
+                <p className="text-brand-light text-sm">{formatDate(event.event_date)}</p>
               </div>
 
               {/* Event Details */}

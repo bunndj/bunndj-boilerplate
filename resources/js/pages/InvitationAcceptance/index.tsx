@@ -46,7 +46,7 @@ function InvitationAcceptance() {
     try {
       setLoading(true);
       const response = await fetch(`/api/invitations/${token}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch invitation');
@@ -80,7 +80,7 @@ function InvitationAcceptance() {
 
       const data = await response.json();
       setInvitation(data.invitation);
-      
+
       showNotification({
         type: 'success',
         message: 'Invitation accepted successfully! Redirecting to dashboard...',
@@ -125,7 +125,9 @@ function InvitationAcceptance() {
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 text-center">
           <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Invitation Not Found</h2>
-          <p className="text-gray-600 mb-6">{error || 'This invitation link is invalid or has expired.'}</p>
+          <p className="text-gray-600 mb-6">
+            {error || 'This invitation link is invalid or has expired.'}
+          </p>
           <button
             onClick={() => navigate('/')}
             className="bg-brand hover:bg-brand-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
@@ -155,7 +157,11 @@ function InvitationAcceptance() {
             )}
           </div>
           <h1 className="text-2xl font-bold text-center">
-            {isAccepted ? 'Invitation Accepted' : isExpired ? 'Invitation Expired' : 'Wedding Event Invitation'}
+            {isAccepted
+              ? 'Invitation Accepted'
+              : isExpired
+                ? 'Invitation Expired'
+                : 'Wedding Event Invitation'}
           </h1>
         </div>
 
@@ -227,7 +233,8 @@ function InvitationAcceptance() {
                       <div>
                         <p className="font-medium text-gray-900">Venue</p>
                         <p className="text-sm text-gray-600">
-                          {invitation.event.venue_name}, {invitation.event.venue_city}, {invitation.event.venue_state}
+                          {invitation.event.venue_name}, {invitation.event.venue_city},{' '}
+                          {invitation.event.venue_state}
                         </p>
                       </div>
                     </div>
@@ -238,9 +245,10 @@ function InvitationAcceptance() {
               {/* Action Buttons */}
               <div className="space-y-4">
                 <p className="text-center text-gray-300">
-                  You've been invited to join this wedding event. Please sign in or create an account to accept the invitation.
+                  You've been invited to join this wedding event. Please sign in or create an
+                  account to accept the invitation.
                 </p>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleSignIn}

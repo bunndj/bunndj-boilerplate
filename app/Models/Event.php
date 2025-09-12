@@ -133,6 +133,14 @@ class Event extends Model
     }
 
     /**
+     * Get chat progress for this event
+     */
+    public function chatProgress()
+    {
+        return $this->hasMany(EventChatProgress::class);
+    }
+
+    /**
      * Get the full venue address
      */
     public function getFullVenueAddressAttribute(): string

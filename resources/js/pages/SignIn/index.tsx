@@ -42,17 +42,17 @@ function SignIn() {
       console.log('🔍 [SignIn] Attempting login with redirect:', redirectTo);
       await login(data.email, data.password);
       console.log('✅ [SignIn] Login successful, showing notification...');
-      
+
       addNotification({
         type: 'success',
         title: 'Welcome back!',
         message: 'You have successfully signed in to your account.',
       });
-      
+
       // Add a small delay to ensure auth state is fully updated
       console.log('🔍 [SignIn] Waiting for auth state to update...');
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Redirect to the specified page or dashboard
       const redirectPath = redirectTo || dashboardRoute;
       console.log('🔍 [SignIn] Redirecting to:', redirectPath);

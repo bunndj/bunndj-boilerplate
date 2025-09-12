@@ -75,30 +75,51 @@ const Events: React.FC = () => {
     const expiresAt = new Date(invitation.expires_at);
 
     if (invitation.status === 'accepted') {
-      return { status: 'accepted', text: 'Client joined the event', icon: CheckCircle, color: 'text-green-600 bg-green-100' };
+      return {
+        status: 'accepted',
+        text: 'Client joined the event',
+        icon: CheckCircle,
+        color: 'text-green-600 bg-green-100',
+      };
     } else if (invitation.status === 'expired' || expiresAt < now) {
-      return { status: 'expired', text: 'Expired', icon: XCircle, color: 'text-red-600 bg-red-100' };
-    } else if(invitation.status === 'pending') {
-      return { status: 'pending', text: 'Waiting for Client', icon: Clock3, color: 'text-blue-600 bg-blue-100' };
+      return {
+        status: 'expired',
+        text: 'Expired',
+        icon: XCircle,
+        color: 'text-red-600 bg-red-100',
+      };
+    } else if (invitation.status === 'pending') {
+      return {
+        status: 'pending',
+        text: 'Waiting for Client',
+        icon: Clock3,
+        color: 'text-blue-600 bg-blue-100',
+      };
     }
   };
 
   const handleResendInvitation = async (event: Event, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event card click
-    
+
     if (!event.invitations || event.invitations.length === 0) {
       return;
     }
 
     const invitation = event.invitations[0];
-    
+
     try {
       await invitationService.resendInvitation(invitation.id);
-      showSuccess('Invitation Resent!', 'The invitation email has been sent successfully to the client.');
+      showSuccess(
+        'Invitation Resent!',
+        'The invitation email has been sent successfully to the client.'
+      );
       // Refetch events to update the status
       refetch();
     } catch (error) {
-      showError('Resend Failed', error instanceof Error ? error.message : 'Failed to resend invitation. Please try again.');
+      showError(
+        'Resend Failed',
+        error instanceof Error ? error.message : 'Failed to resend invitation. Please try again.'
+      );
     }
   };
 
@@ -197,7 +218,9 @@ const Events: React.FC = () => {
                       if (invitationStatus) {
                         const IconComponent = invitationStatus.icon;
                         return (
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${invitationStatus.color} flex items-center space-x-1`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${invitationStatus.color} flex items-center space-x-1`}
+                          >
                             <IconComponent className="w-3 h-3" />
                             <span>{invitationStatus.text}</span>
                           </span>
@@ -266,7 +289,7 @@ const Events: React.FC = () => {
                       return (
                         <div className="mt-2 text-center">
                           <button
-                            onClick={(e) => handleResendInvitation(event, e)}
+                            onClick={e => handleResendInvitation(event, e)}
                             className="text-xs text-red-600 hover:text-red-800 font-medium bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors duration-200"
                           >
                             Resend Invitation

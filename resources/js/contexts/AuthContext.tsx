@@ -3,7 +3,14 @@ import { authService } from '@/services';
 import { setAuthToken } from '@/services';
 import { authStorage } from '@/utils/storage';
 import type { AuthContextType, User } from '@/types';
-import { ROLES, PERMISSIONS, hasPermission, getRolePermissions, type Role, type Permission } from '@/constants/roles';
+import {
+  ROLES,
+  PERMISSIONS,
+  hasPermission,
+  getRolePermissions,
+  type Role,
+  type Permission,
+} from '@/constants/roles';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -58,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         canUseChat: false,
         canSendInvitations: false,
         canViewDashboard: false,
-        canManageSystem: false
+        canManageSystem: false,
       };
     }
 
@@ -88,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       canUseChat: hasPermission(userRole, PERMISSIONS.USE_CHAT),
       canSendInvitations: hasPermission(userRole, PERMISSIONS.SEND_INVITATIONS),
       canViewDashboard: hasPermission(userRole, PERMISSIONS.VIEW_DASHBOARD),
-      canManageSystem: hasPermission(userRole, PERMISSIONS.MANAGE_SYSTEM)
+      canManageSystem: hasPermission(userRole, PERMISSIONS.MANAGE_SYSTEM),
     };
   }, [user]);
 
@@ -116,7 +123,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error: any) {
         // Handle inactive account errors differently from invalid tokens
-        if (error.response?.status === 403 && error.response?.data?.message?.includes('deactivated')) {
+        if (
+          error.response?.status === 403 &&
+          error.response?.data?.message?.includes('deactivated')
+        ) {
           // For inactive accounts, the API client interceptor will handle the redirect
           // Just clear the auth here
           clearAuth();
@@ -160,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔍 [AuthContext] Attempting registration:', {
         email,
         role,
-        invitationId
+        invitationId,
       });
       const response = await authService.register({
         name,

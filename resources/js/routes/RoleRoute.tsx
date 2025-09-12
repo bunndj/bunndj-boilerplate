@@ -8,10 +8,10 @@ interface RoleRouteProps {
   fallbackPath?: string;
 }
 
-const RoleRoute: React.FC<RoleRouteProps> = ({ 
-  children, 
-  allowedRoles, 
-  fallbackPath = '/unauthorized' 
+const RoleRoute: React.FC<RoleRouteProps> = ({
+  children,
+  allowedRoles,
+  fallbackPath = '/unauthorized',
 }) => {
   const { user, isAuthenticated } = useAuth();
 

@@ -25,7 +25,7 @@ function Profile() {
   // Update form when user data is loaded
   useEffect(() => {
     if (user) {
-      reset({
+      const formData: any = {
         name: user.name || '',
         organization: user.organization || '',
         website: user.website || '',
@@ -38,7 +38,14 @@ function Profile() {
         city: user.city || '',
         state: user.state || '',
         zipcode: user.zipcode || '',
-      });
+      };
+
+      // Only include calendar_link for DJs
+      if (user.role === 'dj') {
+        formData.calendar_link = user.calendar_link || '';
+      }
+
+      reset(formData);
     }
   }, [user, reset]);
 
@@ -193,6 +200,26 @@ function Profile() {
                     placeholder="Enter your website URL"
                   />
                 </div>
+
+                {/* Calendar Link - Only for DJs */}
+                {user?.role === 'dj' && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-secondary">
+                      Calendar Link
+                    </label>
+                    <input
+                      type="url"
+                      {...register('calendar_link')}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent ${
+                        errors.calendar_link ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter your calendar booking link (e.g., Calendly, Acuity)"
+                    />
+                    {errors.calendar_link && (
+                      <p className="text-red-500 text-sm">{errors.calendar_link.message}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Cell Phone */}
                 <PhoneInput

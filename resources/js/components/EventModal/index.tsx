@@ -222,11 +222,12 @@ const EventModal: React.FC<EventModalProps> = ({
               // Check if email was changed and invitation was sent
               const emailChanged = response?.data?.email_changed;
               const invitation = response?.data?.invitation;
-              
+
               let notificationMessage = `"${data.name}" has been updated.`;
-              
+
               if (emailChanged && invitation) {
-                notificationMessage += ' The invitation has been updated and sent to the new client email.';
+                notificationMessage +=
+                  ' The invitation has been updated and sent to the new client email.';
               } else if (emailChanged) {
                 notificationMessage += ' Client email has been updated.';
               }

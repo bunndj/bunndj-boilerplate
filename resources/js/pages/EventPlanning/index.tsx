@@ -89,11 +89,11 @@ const EventPlanning: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDocumentUploadModalOpen, setIsDocumentUploadModalOpen] = useState(false);
-  
+
   // State for notes input and parsing
   const [notes, setNotes] = useState('');
   const [isProcessingNotes, setIsProcessingNotes] = useState(false);
-  
+
   // State for AI-filled data
   const [aiFilledPlanningData, setAiFilledPlanningData] = useState<PlanningFormData | null>(null);
   const [aiFilledMusicData, setAiFilledMusicData] = useState<MusicIdeasFormData | null>(null);
@@ -266,7 +266,7 @@ const EventPlanning: React.FC = () => {
       console.log('Current planning data:', planningData);
       console.log('Current music data:', musicIdeasData);
       console.log('Current timeline data:', timelineData);
-      
+
       // Create default data structures if they don't exist
       const defaultPlanningData: PlanningFormData = {
         mailingAddress: '',
@@ -318,7 +318,7 @@ const EventPlanning: React.FC = () => {
         spotifyPlaylists: '',
         lineDances: '',
         takeRequests: '',
-        musicNotes: ''
+        musicNotes: '',
       };
 
       const defaultMusicData: MusicIdeasFormData = {
@@ -327,25 +327,25 @@ const EventPlanning: React.FC = () => {
         dedication: [],
         play_only_if_requested: [],
         do_not_play: [],
-        guest_request: []
+        guest_request: [],
       };
 
       const defaultTimelineData: TimelineFormData = {
-        timeline_items: []
+        timeline_items: [],
       };
-      
+
       // Apply AI-extracted data to all forms
       console.log('Processing planning form...');
       const filledPlanningData = AIFormFiller.fillPlanningForm(
         planningData?.planning_data || defaultPlanningData,
         parsedData
       );
-      
+
       console.log('Filled planning data:', filledPlanningData);
-      
+
       // Set AI-filled data in state
       setAiFilledPlanningData(filledPlanningData);
-      
+
       // Save to backend - this will trigger a re-fetch and update the UI
       await handlePlanningFormSave(filledPlanningData);
 
@@ -354,12 +354,12 @@ const EventPlanning: React.FC = () => {
         musicIdeasData?.music_ideas || defaultMusicData,
         parsedData
       );
-      
+
       console.log('Filled music data:', filledMusicData);
-      
+
       // Set AI-filled data in state
       setAiFilledMusicData(filledMusicData);
-      
+
       // Save to backend
       await handleMusicIdeasSave(filledMusicData);
 
@@ -368,14 +368,14 @@ const EventPlanning: React.FC = () => {
         timelineData?.timeline_data || defaultTimelineData,
         parsedData
       );
-      
+
       console.log('Filled timeline data:', filledTimelineData);
       console.log('Timeline items count:', filledTimelineData.timeline_items?.length);
       console.log('Timeline items:', filledTimelineData.timeline_items);
-      
+
       // Set AI-filled data in state
       setAiFilledTimelineData(filledTimelineData);
-      
+
       // Save to backend
       await handleTimelineSave(filledTimelineData);
 
@@ -387,9 +387,8 @@ const EventPlanning: React.FC = () => {
         `Great! I've analyzed your document and filled in ${totalFields} fields across your forms. The forms have been updated with the extracted information. Please review and edit as needed.`,
         ['Review Forms']
       );
-      
+
       console.log('=== DOCUMENT PROCESSING COMPLETE ===');
-      
     } catch (error) {
       console.error('Error applying AI-extracted data:', error);
       addBotMessage(
@@ -403,19 +402,19 @@ const EventPlanning: React.FC = () => {
     try {
       console.log('=== NOTES PROCESSING START ===');
       console.log('Notes text received:', notesText);
-      
+
       setIsProcessingNotes(true);
-      
+
       // Parse notes using AI service (same as document parsing)
       console.log('Sending notes to AI service for parsing...');
       const parseResponse = await documentService.parseNotes(eventId!, notesText);
-      
+
       if (!parseResponse.success) {
         throw new Error(parseResponse.message || 'Failed to parse notes');
       }
-      
+
       console.log('AI parsing response:', parseResponse.data);
-      
+
       // Create default data structures if they don't exist
       const defaultPlanningData: PlanningFormData = {
         mailingAddress: '',
@@ -467,7 +466,7 @@ const EventPlanning: React.FC = () => {
         spotifyPlaylists: '',
         lineDances: '',
         takeRequests: '',
-        musicNotes: ''
+        musicNotes: '',
       };
 
       const defaultMusicData: MusicIdeasFormData = {
@@ -476,16 +475,16 @@ const EventPlanning: React.FC = () => {
         dedication: [],
         play_only_if_requested: [],
         do_not_play: [],
-        guest_request: []
+        guest_request: [],
       };
 
       const defaultTimelineData: TimelineFormData = {
-        timeline_items: []
+        timeline_items: [],
       };
-      
+
       // Use the AI-parsed data (same structure as document parsing)
       const aiParsedData = parseResponse.data;
-      
+
       // Apply AI-extracted data to all forms using the same logic as document processing
       console.log('Processing planning form from AI-parsed notes...');
       const filledPlanningData = AIFormFiller.fillPlanningForm(
@@ -493,13 +492,13 @@ const EventPlanning: React.FC = () => {
         aiParsedData,
         true // appendMode = true for notes parsing
       );
-      
+
       console.log('Filled planning data from AI-parsed notes:', filledPlanningData);
-      
+
       // Set AI-filled data in state
       console.log('Setting AI-filled planning data:', filledPlanningData);
       setAiFilledPlanningData(filledPlanningData);
-      
+
       // Save to backend
       await handlePlanningFormSave(filledPlanningData);
 
@@ -509,13 +508,13 @@ const EventPlanning: React.FC = () => {
         aiParsedData,
         true // appendMode = true for notes parsing
       );
-      
+
       console.log('Filled music data from AI-parsed notes:', filledMusicData);
-      
+
       // Set AI-filled data in state
       console.log('Setting AI-filled music data:', filledMusicData);
       setAiFilledMusicData(filledMusicData);
-      
+
       // Save to backend
       await handleMusicIdeasSave(filledMusicData);
 
@@ -525,31 +524,30 @@ const EventPlanning: React.FC = () => {
         aiParsedData,
         true // appendMode = true for notes parsing
       );
-      
+
       console.log('Filled timeline data from AI-parsed notes:', filledTimelineData);
-      
+
       // Set AI-filled data in state
       console.log('Setting AI-filled timeline data:', filledTimelineData);
       setAiFilledTimelineData(filledTimelineData);
-      
+
       // Save to backend
       await handleTimelineSave(filledTimelineData);
 
       // Clear the notes input
       setNotes('');
-      
+
       // Show success notification
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
-      
+
       // Show AI processing notification
       addBotMessage(
         `Great! I've processed your notes and filled in the forms with relevant information. The forms have been updated with the extracted data. Please review and edit as needed.`,
         ['Review Forms']
       );
-      
+
       console.log('=== NOTES PROCESSING COMPLETE ===');
-      
     } catch (error) {
       console.error('Error processing notes:', error);
       setSaveStatus('error');
@@ -695,7 +693,7 @@ const EventPlanning: React.FC = () => {
                       <span>Upload Document</span>
                     </button>
                   )}
-                  
+
                   {/* Save Status Indicators */}
                   {saveStatus === 'saving' && (
                     <div className="flex items-center text-blue-600">
@@ -717,7 +715,7 @@ const EventPlanning: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               {/* Notes Input Section for DJ users */}
               {canUploadDocuments && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -727,12 +725,13 @@ const EventPlanning: React.FC = () => {
                       <h4 className="text-sm font-semibold text-gray-900">AI Notes Parser</h4>
                     </div>
                     <p className="text-xs text-gray-600">
-                      Type your notes here and AI will automatically fill the forms with relevant information.
+                      Type your notes here and AI will automatically fill the forms with relevant
+                      information.
                     </p>
                     <div className="flex space-x-2">
                       <textarea
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        onChange={e => setNotes(e.target.value)}
                         placeholder="Enter your notes here... (e.g., 'Wedding is at 4 PM, bride wants to walk down to Canon in D, 150 guests expected, cocktail hour at 5 PM, dinner at 6 PM, first dance to Perfect by Ed Sheeran...')"
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
                         rows={3}
@@ -756,7 +755,7 @@ const EventPlanning: React.FC = () => {
                         )}
                       </button>
                     </div>
-                    
+
                     {/* AI Processing Status */}
                     {(aiFilledPlanningData || aiFilledMusicData || aiFilledTimelineData) && (
                       <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
@@ -765,7 +764,8 @@ const EventPlanning: React.FC = () => {
                           <span className="text-xs font-medium">AI data applied to forms</span>
                         </div>
                         <div className="text-xs text-green-600 mt-1">
-                          The forms below have been automatically filled with information from your notes.
+                          The forms below have been automatically filled with information from your
+                          notes.
                         </div>
                       </div>
                     )}
@@ -800,10 +800,26 @@ const EventPlanning: React.FC = () => {
               <div className="p-2 bg-gray-100 text-xs text-gray-600">
                 Debug: Planning data available: {planningData?.planning_data ? 'Yes' : 'No'}
                 {planningData?.planning_data && (
-                  <div>Fields: {Object.keys(planningData.planning_data).filter(k => (planningData.planning_data as any)[k]).length} filled</div>
+                  <div>
+                    Fields:{' '}
+                    {
+                      Object.keys(planningData.planning_data).filter(
+                        k => (planningData.planning_data as any)[k]
+                      ).length
+                    }{' '}
+                    filled
+                  </div>
                 )}
                 {aiFilledPlanningData && (
-                  <div className="text-green-600">AI-filled data available: {Object.keys(aiFilledPlanningData).filter(k => (aiFilledPlanningData as any)[k]).length} fields</div>
+                  <div className="text-green-600">
+                    AI-filled data available:{' '}
+                    {
+                      Object.keys(aiFilledPlanningData).filter(
+                        k => (aiFilledPlanningData as any)[k]
+                      ).length
+                    }{' '}
+                    fields
+                  </div>
                 )}
               </div>
             </div>
@@ -834,7 +850,15 @@ const EventPlanning: React.FC = () => {
               <div className="p-2 bg-gray-100 text-xs text-gray-600">
                 Debug: Music data available: {musicIdeasData?.music_ideas ? 'Yes' : 'No'}
                 {aiFilledMusicData && (
-                  <div className="text-green-600">AI-filled music data available: {Object.keys(aiFilledMusicData).filter(k => (aiFilledMusicData as any)[k]?.length > 0).length} categories</div>
+                  <div className="text-green-600">
+                    AI-filled music data available:{' '}
+                    {
+                      Object.keys(aiFilledMusicData).filter(
+                        k => (aiFilledMusicData as any)[k]?.length > 0
+                      ).length
+                    }{' '}
+                    categories
+                  </div>
                 )}
               </div>
             </div>
@@ -857,7 +881,7 @@ const EventPlanning: React.FC = () => {
                       <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                       Auto-saving
                     </div>
-                
+
                     <button
                       id="timeline-add-activity-btn"
                       className="px-3 py-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
@@ -878,7 +902,10 @@ const EventPlanning: React.FC = () => {
               <div className="p-2 bg-gray-100 text-xs text-gray-600">
                 Debug: Timeline data available: {timelineData?.timeline_data ? 'Yes' : 'No'}
                 {aiFilledTimelineData && (
-                  <div className="text-green-600">AI-filled timeline data available: {aiFilledTimelineData.timeline_items?.length || 0} items</div>
+                  <div className="text-green-600">
+                    AI-filled timeline data available:{' '}
+                    {aiFilledTimelineData.timeline_items?.length || 0} items
+                  </div>
                 )}
               </div>
             </div>

@@ -30,7 +30,7 @@ export const useRole = () => {
     canUseChat,
     canSendInvitations,
     canViewDashboard,
-    canManageSystem
+    canManageSystem,
   } = useAuth();
 
   return {
@@ -38,15 +38,15 @@ export const useRole = () => {
     user,
     role,
     permissions,
-    
+
     // Role checks
     isAdmin,
     isDj,
     isClient,
-    
+
     // Permission checks
     hasPermission,
-    
+
     // Event permissions
     canCreateEvents,
     canEditEvents,
@@ -54,32 +54,32 @@ export const useRole = () => {
     canViewAllEvents,
     canViewOwnEvents,
     canViewInvitedEvents,
-    
+
     // User management permissions
     canManageUsers,
     canViewAllUsers,
     canEditUsers,
     canDeleteUsers,
-    
+
     // Planning permissions
     canEditPlanning,
     canViewPlanning,
     canUploadDocuments,
-    
+
     // Communication permissions
     canUseChat,
     canSendInvitations,
-    
+
     // System permissions
     canViewDashboard,
     canManageSystem,
-    
+
     // Utility functions
     isRole: (checkRole: Role) => role === checkRole,
-    hasAnyPermission: (permissionList: Permission[]) => 
+    hasAnyPermission: (permissionList: Permission[]) =>
       permissionList.some(permission => hasPermission(permission)),
-    hasAllPermissions: (permissionList: Permission[]) => 
-      permissionList.every(permission => hasPermission(permission))
+    hasAllPermissions: (permissionList: Permission[]) =>
+      permissionList.every(permission => hasPermission(permission)),
   };
 };
 
@@ -98,12 +98,12 @@ export const usePermission = (permission: Permission) => {
  */
 export const usePermissions = (permissions: Permission[]) => {
   const { hasPermission } = useAuth();
-  
+
   return {
     hasAny: permissions.some(permission => hasPermission(permission)),
     hasAll: permissions.every(permission => hasPermission(permission)),
     hasPermission: (permission: Permission) => hasPermission(permission),
-    missingPermissions: permissions.filter(permission => !hasPermission(permission))
+    missingPermissions: permissions.filter(permission => !hasPermission(permission)),
   };
 };
 
@@ -113,17 +113,17 @@ export const usePermissions = (permissions: Permission[]) => {
  */
 export const useRoleHelpers = () => {
   const { role, isAdmin, isDj, isClient } = useAuth();
-  
+
   return {
     role,
     isAdmin,
     isDj,
     isClient,
-    
+
     // Role constants for easy access
     ROLES,
     PERMISSIONS,
-    
+
     // Role-specific navigation
     getDashboardPath: () => {
       if (isAdmin) return '/admin/dashboard';
@@ -131,19 +131,19 @@ export const useRoleHelpers = () => {
       if (isClient) return '/client/dashboard';
       return '/dashboard';
     },
-    
+
     getEventsPath: () => {
       if (isAdmin) return '/admin/events';
       if (isDj) return '/events';
       if (isClient) return '/client/events';
       return '/events';
     },
-    
+
     // Role-specific features
     canAccessAdminPanel: isAdmin,
     canAccessDjPanel: isDj || isAdmin,
     canAccessClientPanel: isClient || isAdmin,
-    
+
     // Role display helpers
     getRoleDisplayName: () => {
       if (isAdmin) return 'Administrator';
@@ -151,12 +151,12 @@ export const useRoleHelpers = () => {
       if (isClient) return 'Client';
       return 'Unknown';
     },
-    
+
     getRoleColor: () => {
       if (isAdmin) return 'text-red-600 bg-red-100';
       if (isDj) return 'text-blue-600 bg-blue-100';
       if (isClient) return 'text-green-600 bg-green-100';
       return 'text-gray-300 bg-gray-100';
-    }
+    },
   };
 };

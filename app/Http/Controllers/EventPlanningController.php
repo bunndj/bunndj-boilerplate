@@ -25,8 +25,20 @@ class EventPlanningController extends Controller
             ]);
         }
 
+        // Convert planning data to form format for client access
+        $planningData = $planning->planning_data;
+        $formData = [];
+        
+        if (is_array($planningData)) {
+            foreach ($planningData as $field) {
+                if (isset($field['field_name']) && isset($field['field_value'])) {
+                    $formData[$field['field_name']] = $field['field_value'];
+                }
+            }
+        }
+
         return response()->json([
-            'planning_data' => $planning->planning_data,
+            'planning_data' => $formData,
             'notes' => $planning->notes,
             'completion_percentage' => $planning->getCompletionPercentage()
         ]);
@@ -43,17 +55,36 @@ class EventPlanningController extends Controller
                 'notes' => 'nullable|string'
             ]);
 
+            // Convert form data to database format
+            $planningDataArray = [];
+            if (isset($validated['planning_data']) && is_array($validated['planning_data'])) {
+                foreach ($validated['planning_data'] as $fieldName => $fieldValue) {
+                    if ($fieldValue !== null && $fieldValue !== '') {
+                        $planningDataArray[] = [
+                            'field_name' => $fieldName,
+                            'field_value' => $fieldValue
+                        ];
+                    }
+                }
+            }
+
             $planning = EventPlanning::updateOrCreate(
                 ['event_id' => $event->id],
                 [
-                    'planning_data' => $validated['planning_data'],
+                    'planning_data' => $planningDataArray,
                     'notes' => $validated['notes'] ?? null
                 ]
             );
 
+            // Convert back to form format for response
+            $formData = [];
+            foreach ($planningDataArray as $field) {
+                $formData[$field['field_name']] = $field['field_value'];
+            }
+
             return response()->json([
                 'message' => 'Planning data saved successfully',
-                'planning_data' => $planning->planning_data,
+                'planning_data' => $formData,
                 'notes' => $planning->notes,
                 'completion_percentage' => $planning->getCompletionPercentage()
             ]);

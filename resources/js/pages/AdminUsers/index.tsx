@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Filter, UserCheck, UserX } from 'lucide-react';
-import { useAuth, useAdminUsers, useDeleteAdminUser, useToggleUserStatus, useBulkUserAction } from '@/hooks';
+import {
+  useAuth,
+  useAdminUsers,
+  useDeleteAdminUser,
+  useToggleUserStatus,
+  useBulkUserAction,
+} from '@/hooks';
 import UserEditModal from '@/components/UserEditModal';
 
 interface AdminUser {
@@ -35,12 +41,17 @@ function AdminUsers() {
   });
 
   // API hooks
-  const { data: usersResponse, isLoading: loading, error, refetch } = useAdminUsers({
+  const {
+    data: usersResponse,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useAdminUsers({
     search: searchTerm,
     role: roleFilter,
     status: statusFilter,
   });
-  
+
   const deleteUserMutation = useDeleteAdminUser();
   const toggleStatusMutation = useToggleUserStatus();
   const bulkActionMutation = useBulkUserAction();
@@ -64,7 +75,6 @@ function AdminUsers() {
 
   // Since filtering is now handled by the API, we can use users directly
   const filteredUsers = users;
-
 
   const handleToggleUserStatus = async (userId: number) => {
     try {
@@ -124,7 +134,7 @@ function AdminUsers() {
 
   const handleBulkAction = async (action: string) => {
     if (selectedUsers.length === 0) return;
-    
+
     try {
       await bulkActionMutation.mutateAsync({ userIds: selectedUsers, action });
       setSelectedUsers([]);
@@ -135,10 +145,14 @@ function AdminUsers() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800';
-      case 'dj': return 'bg-blue-100 text-blue-800';
-      case 'client': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'admin':
+        return 'bg-red-100 text-red-800';
+      case 'dj':
+        return 'bg-blue-100 text-blue-800';
+      case 'client':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -172,7 +186,7 @@ function AdminUsers() {
               <strong className="font-bold">Error loading users:</strong>
               <span className="block sm:inline"> {error.message || 'Unknown error'}</span>
             </div>
-            <button 
+            <button
               onClick={() => refetch()}
               className="bg-brand hover:bg-brand-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
             >
@@ -191,10 +205,12 @@ function AdminUsers() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-brand animate-fade-in">User Management</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-brand animate-fade-in">
+                User Management
+              </h1>
               <p className="text-gray-300">Manage DJs, clients, and admin users</p>
             </div>
-            <button 
+            <button
               onClick={handleCreateUser}
               className="bg-brand hover:bg-brand-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
             >
@@ -213,13 +229,13 @@ function AdminUsers() {
                 type="text"
                 placeholder="Search users..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
               />
             </div>
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              onChange={e => setRoleFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
             >
               <option value="all">All Roles</option>
@@ -229,7 +245,7 @@ function AdminUsers() {
             </select>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={e => setStatusFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
             >
               <option value="all">All Status</option>
@@ -272,12 +288,16 @@ function AdminUsers() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+                {filteredUsers.map(user => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm">
-                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {user.name
+                            .split(' ')
+                            .map(n => n[0])
+                            .join('')
+                            .toUpperCase()}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{user.name}</div>
@@ -287,7 +307,9 @@ function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}
+                      >
                         {user.role.toUpperCase()}
                       </span>
                     </td>
@@ -295,11 +317,11 @@ function AdminUsers() {
                       {user.organization || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}
+                      >
                         {user.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -311,13 +333,17 @@ function AdminUsers() {
                         <button
                           onClick={() => handleToggleUserStatus(user.id)}
                           className={`p-2 rounded-lg transition-colors duration-200 ${
-                            user.is_active 
-                              ? 'text-red-600 hover:bg-red-50' 
+                            user.is_active
+                              ? 'text-red-600 hover:bg-red-50'
                               : 'text-green-600 hover:bg-green-50'
                           }`}
                           title={user.is_active ? 'Deactivate User' : 'Activate User'}
                         >
-                          {user.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                          {user.is_active ? (
+                            <UserX className="w-4 h-4" />
+                          ) : (
+                            <UserCheck className="w-4 h-4" />
+                          )}
                         </button>
                         <button
                           onClick={() => handleEditUser(user)}
@@ -351,23 +377,21 @@ function AdminUsers() {
         {selectedUsers.length > 0 && (
           <div className="mt-6 bg-white rounded-xl shadow-lg p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
-                {selectedUsers.length} user(s) selected
-              </span>
+              <span className="text-sm text-gray-600">{selectedUsers.length} user(s) selected</span>
               <div className="flex items-center space-x-2">
-                <button 
+                <button
                   onClick={() => handleBulkAction('activate')}
                   className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
                 >
                   Activate Selected
                 </button>
-                <button 
+                <button
                   onClick={() => handleBulkAction('deactivate')}
                   className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
                 >
                   Deactivate Selected
                 </button>
-                <button 
+                <button
                   onClick={() => handleBulkAction('delete')}
                   className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
                 >
@@ -398,7 +422,9 @@ function AdminUsers() {
                   Delete User
                 </h3>
                 <p className="text-gray-600 text-center mb-6">
-                  Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteConfirmModal.userName}</span>? This action cannot be undone.
+                  Are you sure you want to delete{' '}
+                  <span className="font-semibold text-gray-900">{deleteConfirmModal.userName}</span>
+                  ? This action cannot be undone.
                 </p>
                 <div className="flex items-center justify-end space-x-3">
                   <button

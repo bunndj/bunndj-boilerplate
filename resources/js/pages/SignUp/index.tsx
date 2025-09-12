@@ -36,13 +36,13 @@ function SignUp() {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      console.log('🔍 [SignUp] Form submission with data:', { 
-        invitationId, 
-        invitationEmail, 
+      console.log('🔍 [SignUp] Form submission with data:', {
+        invitationId,
+        invitationEmail,
         email: data.email,
-        name: data.name 
+        name: data.name,
       });
-      
+
       if (invitationId) {
         console.log('🔍 [SignUp] Registering via invitation with ID:', invitationId);
         // Register via invitation (client role)
@@ -115,10 +115,9 @@ function SignUp() {
               {invitationId ? 'Complete Your Registration' : 'Join DJ Planning Hub'}
             </h1>
             <p className="text-white text-sm sm:text-base">
-              {invitationId 
-                ? 'You\'ve been invited to join a wedding event. Complete your registration to get started.'
-                : 'Create your DJ account and start planning amazing events'
-              }
+              {invitationId
+                ? "You've been invited to join a wedding event. Complete your registration to get started."
+                : 'Create your DJ account and start planning amazing events'}
             </p>
           </div>
 

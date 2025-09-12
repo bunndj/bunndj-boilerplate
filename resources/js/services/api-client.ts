@@ -71,7 +71,7 @@ apiClient.interceptors.response.use(
   error => {
     // Don't clear auth data for logout requests
     const isLogoutRequest = error.config?.url?.includes('/logout');
-    
+
     // Handle different types of authentication errors
     if (error.response?.status === 401 && !isLogoutRequest) {
       // Clear token and user data

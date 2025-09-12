@@ -20,11 +20,11 @@ interface UserEditModalProps {
   isEdit?: boolean;
 }
 
-const UserEditModal: React.FC<UserEditModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  user = null, 
-  isEdit = false 
+const UserEditModal: React.FC<UserEditModalProps> = ({
+  isOpen,
+  onClose,
+  user = null,
+  isEdit = false,
 }) => {
   const [formData, setFormData] = useState<User>({
     name: '',
@@ -70,7 +70,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -113,14 +113,14 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     try {
       const submitData = { ...formData };
-      
+
       // For edit mode, remove password and organization fields
       if (isEdit) {
         delete submitData.password;
@@ -128,14 +128,14 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
       }
 
       if (isEdit && user?.id) {
-        await updateUserMutation.mutateAsync({ 
-          id: user.id, 
-          data: submitData 
+        await updateUserMutation.mutateAsync({
+          id: user.id,
+          data: submitData,
         });
       } else {
         await createUserMutation.mutateAsync(submitData);
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Error saving user:', error);
@@ -164,9 +164,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
               type="text"
               name="name"
@@ -177,16 +175,12 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               }`}
               placeholder="Enter full name"
             />
-            {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-            )}
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
             <input
               type="email"
               name="email"
@@ -197,16 +191,12 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               }`}
               placeholder="Enter email address"
             />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
           </div>
 
           {/* Username */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
             <input
               type="text"
               name="username"
@@ -217,16 +207,12 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               }`}
               placeholder="Enter username"
             />
-            {errors.username && (
-              <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-            )}
+            {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
           </div>
 
           {/* Role */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
             <select
               name="role"
               value={formData.role}
@@ -242,9 +228,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
           {/* Organization - Only show for new users */}
           {!isEdit && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Organization
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
               <input
                 type="text"
                 name="organization"
@@ -259,9 +243,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
           {/* Password - Only show for new users */}
           {!isEdit && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -281,9 +263,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
           )}
 
@@ -296,9 +276,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               onChange={handleInputChange}
               className="h-4 w-4 text-brand focus:ring-brand border-gray-300 rounded"
             />
-            <label className="ml-2 block text-sm text-gray-700">
-              Active user
-            </label>
+            <label className="ml-2 block text-sm text-gray-700">Active user</label>
           </div>
 
           {/* Action Buttons */}
@@ -316,7 +294,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               className="px-4 py-2 bg-brand hover:bg-brand-dark text-white rounded-lg transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
-              <span>{isLoading ? 'Saving...' : (isEdit ? 'Update User' : 'Create User')}</span>
+              <span>{isLoading ? 'Saving...' : isEdit ? 'Update User' : 'Create User'}</span>
             </button>
           </div>
         </form>

@@ -36,16 +36,13 @@ export const eventService = {
    * Update an existing event
    */
   async updateEvent(id: number, eventData: Partial<CreateEventData>): Promise<any> {
-    const response = await apiClient.put<{ 
-      success: boolean; 
-      data: Event; 
-      message: string; 
-      email_changed?: boolean; 
-      invitation?: any; 
-    }>(
-      `/events/${id}`,
-      eventData
-    );
+    const response = await apiClient.put<{
+      success: boolean;
+      data: Event;
+      message: string;
+      email_changed?: boolean;
+      invitation?: any;
+    }>(`/events/${id}`, eventData);
     return response.data;
   },
 
@@ -60,7 +57,9 @@ export const eventService = {
    * Get all events for admin (with DJ and client information)
    */
   async getAdminEvents(params?: any): Promise<{ data: Event[]; pagination: any }> {
-    const response = await apiClient.get<{ data: Event[]; pagination: any }>('/admin/events', { params });
+    const response = await apiClient.get<{ data: Event[]; pagination: any }>('/admin/events', {
+      params,
+    });
     return response.data;
   },
 

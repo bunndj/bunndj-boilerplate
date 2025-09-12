@@ -43,13 +43,18 @@ function AdminEvents() {
   });
 
   // API hooks
-  const { data: eventsResponse, isLoading: loading, error, refetch } = useAdminEvents({
+  const {
+    data: eventsResponse,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useAdminEvents({
     search: debouncedSearchTerm,
     dj: djFilter,
     page: currentPage,
     per_page: 50, // Show more events per page
   });
-  
+
   const deleteEventMutation = useDeleteAdminEvent();
 
   const events = (eventsResponse?.data || []) as unknown as AdminEvent[];
@@ -87,10 +92,8 @@ function AdminEvents() {
   const filteredEvents = events;
 
   const handleSelectEvent = (eventId: number) => {
-    setSelectedEvents(prev => 
-      prev.includes(eventId) 
-        ? prev.filter(id => id !== eventId)
-        : [...prev, eventId]
+    setSelectedEvents(prev =>
+      prev.includes(eventId) ? prev.filter(id => id !== eventId) : [...prev, eventId]
     );
   };
 
@@ -138,16 +141,15 @@ function AdminEvents() {
     }).format(amount);
   };
 
-
   const handleDeleteEvent = (eventId: number) => {
     console.log('🗑️ Delete button clicked for event ID:', eventId);
-    
+
     const event = events.find(e => e.id === eventId);
     if (!event) {
       console.error('❌ Event not found:', eventId);
       return;
     }
-    
+
     // Show custom confirmation modal
     setDeleteConfirmModal({
       isOpen: true,
@@ -161,17 +163,17 @@ function AdminEvents() {
     if (!eventId) return;
 
     console.log('✅ User confirmed deletion, proceeding...');
-    
+
     try {
       console.log('🔄 Calling delete mutation...');
       await deleteEventMutation.mutateAsync(eventId);
       console.log('✅ Delete mutation successful');
-      
+
       setSelectedEvents(prev => prev.filter(id => id !== eventId));
       // Refetch events to update the list after deletion
       refetch();
       console.log('🔄 Refetch called, list should update');
-      
+
       // Close modal
       setDeleteConfirmModal({ isOpen: false, eventId: null, eventName: '' });
     } catch (error) {
@@ -215,7 +217,7 @@ function AdminEvents() {
               <strong className="font-bold">Error loading events:</strong>
               <span className="block sm:inline"> {error.message || 'Unknown error'}</span>
             </div>
-            <button 
+            <button
               onClick={() => refetch()}
               className="bg-brand hover:bg-brand-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
             >
@@ -232,8 +234,12 @@ function AdminEvents() {
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand animate-fade-in">Event Management</h1>
-          <p className="text-gray-300">View and manage all events across the platform. Click on any row to view event details.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand animate-fade-in">
+            Event Management
+          </h1>
+          <p className="text-gray-300">
+            View and manage all events across the platform. Click on any row to view event details.
+          </p>
         </div>
 
         {/* Filters */}
@@ -245,13 +251,13 @@ function AdminEvents() {
                 type="text"
                 placeholder="Search events..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
               />
             </div>
             <select
               value={djFilter}
-              onChange={(e) => setDjFilter(e.target.value)}
+              onChange={e => setDjFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
             >
               <option value="all">All DJs</option>
@@ -300,21 +306,33 @@ function AdminEvents() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEvents.map((event) => (
-                  <tr 
-                    key={event.id} 
+                {filteredEvents.map(event => (
+                  <tr
+                    key={event.id}
                     className="hover:bg-blue-50 hover:shadow-md cursor-pointer transition-all duration-200 group"
                     onClick={() => handleRowClick(event.id)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200">{event.name}</div>
+                          <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
+                            {event.name}
+                          </div>
                           <div className="text-sm text-gray-500">{event.guest_count} guests</div>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                         </div>
                       </div>
@@ -352,7 +370,10 @@ function AdminEvents() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(event.package)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                      onClick={e => e.stopPropagation()}
+                    >
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleDeleteEvent(event.id)}
@@ -399,8 +420,8 @@ function AdminEvents() {
           <div className="mt-6 bg-white rounded-xl shadow-lg p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Page {pagination.current_page} of {pagination.last_page} 
-                ({pagination.total} total events)
+                Page {pagination.current_page} of {pagination.last_page}({pagination.total} total
+                events)
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -410,9 +431,7 @@ function AdminEvents() {
                 >
                   Previous
                 </button>
-                <span className="px-3 py-1 text-sm">
-                  {currentPage}
-                </span>
+                <span className="px-3 py-1 text-sm">{currentPage}</span>
                 <button
                   onClick={() => setCurrentPage(Math.min(pagination.last_page, currentPage + 1))}
                   disabled={currentPage >= pagination.last_page}
@@ -436,18 +455,16 @@ function AdminEvents() {
                     <Trash2 className="w-6 h-6 text-red-600" />
                   </div>
                 </div>
-                
+
                 {/* Content */}
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Delete Event
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Event</h3>
                   <p className="text-gray-600 mb-6">
-                    Are you sure you want to delete "{deleteConfirmModal.eventName}"? 
-                    This action cannot be undone.
+                    Are you sure you want to delete "{deleteConfirmModal.eventName}"? This action
+                    cannot be undone.
                   </p>
                 </div>
-                
+
                 {/* Actions */}
                 <div className="flex items-center justify-end space-x-3">
                   <button

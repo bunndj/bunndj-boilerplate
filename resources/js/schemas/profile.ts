@@ -18,6 +18,7 @@ export const profileSchema = z.object({
     .regex(/^[0-9]{5}$/, 'Zipcode must be exactly 5 digits')
     .optional()
     .or(z.literal('')),
+  calendar_link: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
@@ -36,4 +37,5 @@ export const defaultProfileFormValues: ProfileFormData = {
   city: '',
   state: '',
   zipcode: '',
+  calendar_link: '',
 };

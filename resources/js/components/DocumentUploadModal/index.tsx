@@ -46,7 +46,8 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         setUploadState(prev => ({ ...prev, error: 'Please select a PDF file' }));
         return;
       }
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      if (file.size > 10 * 1024 * 1024) {
+        // 10MB limit
         setUploadState(prev => ({ ...prev, error: 'File size must be less than 10MB' }));
         return;
       }
@@ -62,6 +63,15 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     }
 
     try {
+      console.log('🔵 [UPLOAD] Starting document upload process');
+      console.log('🔵 [UPLOAD] File details:', {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+        eventId: eventId,
+        isClientUser: isClientUser,
+      });
+
       setUploadState(prev => ({
         ...prev,
         isUploading: true,
@@ -77,10 +87,14 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         }));
       }, 200);
 
+      console.log('🔵 [UPLOAD] Calling document service API...');
+
       // Upload and parse document
-      const response = isClientUser 
+      const response = isClientUser
         ? await documentService.uploadAndParseForClient(eventId, selectedFile, 'pdf')
         : await documentService.uploadAndParse(eventId, selectedFile, 'pdf');
+
+      console.log('🟢 [UPLOAD] Document service response received:', response);
 
       clearInterval(progressInterval);
 
@@ -90,7 +104,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         isProcessing: true,
         progress: 95,
       }));
-      
+
       // Add a progress simulation for long-running operations
       const processingProgressInterval = setInterval(() => {
         setUploadState(prev => ({
@@ -101,8 +115,10 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
       // Simulate processing time
       setTimeout(() => {
+        console.log('🟢 [UPLOAD] Processing complete, updating state with parsed data');
+
         clearInterval(processingProgressInterval);
-        
+
         setUploadState(prev => ({
           ...prev,
           isProcessing: false,
@@ -110,14 +126,25 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           success: true,
         }));
 
-        // Handle different response structures for client vs DJ/Admin
-        const parsedData = response.data.parsed_data || (response.data as any).ai_analysis;
+        // Both client and DJ/Admin now use the same response structure
+        const parsedData = response.data.parsed_data;
+
+        console.log('🟢 [UPLOAD] Parsed data structure:', {
+          hasExtractedFields: !!parsedData?.extracted_fields,
+          extractedFieldsCount: Object.keys(parsedData?.extracted_fields || {}).length,
+          hasTimelineItems: !!parsedData?.timeline_items,
+          timelineItemsCount: parsedData?.timeline_items?.length || 0,
+          confidenceScore: parsedData?.confidence_score,
+          isClientUser: isClientUser,
+          fullParsedData: parsedData,
+        });
+
         setParsedData(parsedData);
         setShowResults(true);
 
         const confidenceScore = parsedData.confidence_score || 0;
         const fieldCount = Object.keys(parsedData.extracted_fields || {}).length;
-        
+
         if (confidenceScore > 0) {
           addNotification({
             type: 'success',
@@ -135,8 +162,15 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         // Don't automatically call onDocumentProcessed here
         // Only call it when user clicks "Apply to Forms" button
       }, 1500);
-
     } catch (error: any) {
+      console.error('🔴 [UPLOAD] Upload failed:', error);
+      console.error('🔴 [UPLOAD] Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        stack: error.stack,
+      });
+
       setUploadState(prev => ({
         ...prev,
         isUploading: false,
@@ -169,9 +203,21 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   }, [uploadState.isUploading, uploadState.isProcessing, onClose]);
 
   const handleApplyToForms = useCallback(() => {
+    console.log('🔵 [APPLY] Apply to Forms button clicked');
+    console.log('🔵 [APPLY] Parsed data to apply:', {
+      hasParsedData: !!parsedData,
+      hasOnDocumentProcessed: !!onDocumentProcessed,
+      extractedFieldsCount: Object.keys(parsedData?.extracted_fields || {}).length,
+      timelineItemsCount: parsedData?.timeline_items?.length || 0,
+      fullParsedData: parsedData,
+    });
+
     if (parsedData && onDocumentProcessed) {
+      console.log('🟢 [APPLY] Calling onDocumentProcessed with parsed data');
       onDocumentProcessed(parsedData);
       handleClose();
+    } else {
+      console.warn('🟡 [APPLY] Missing parsedData or onDocumentProcessed callback');
     }
   }, [parsedData, onDocumentProcessed, handleClose]);
 
@@ -180,7 +226,10 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-        <div className="fixed inset-0 bg-gray-900/70 bg-opacity-75 transition-opacity" onClick={handleClose} />
+        <div
+          className="fixed inset-0 bg-gray-900/70 bg-opacity-75 transition-opacity"
+          onClick={handleClose}
+        />
 
         <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
           {/* Header */}
@@ -322,16 +371,17 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Extracted Information</h5>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    {parsedData?.extracted_fields && Object.entries(parsedData.extracted_fields).map(([key, value]) => (
-                      <div key={key} className="flex justify-between">
-                        <span className="text-gray-300 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}:
-                        </span>
-                        <span className="text-gray-900 font-medium">
-                          {Array.isArray(value) ? value.length : String(value)}
-                        </span>
-                      </div>
-                    ))}
+                    {parsedData?.extracted_fields &&
+                      Object.entries(parsedData.extracted_fields).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-gray-300 capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}:
+                          </span>
+                          <span className="text-gray-900 font-medium">
+                            {Array.isArray(value) ? value.length : String(value)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
 

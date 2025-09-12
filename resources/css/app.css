@@ -11,27 +11,27 @@
   --font-sans:
     'Figtree', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
-  
+
   /* Custom brand colors */
-  --color-brand: #FFBB48;
+  --color-brand: #ffbb48;
   --color-brand-light: #fff0b3;
   --color-brand-dark: #e6a641;
   --color-secondary: #333333;
   --color-secondary-light: #515151;
   --color-secondary-dark: #2a2a2a;
-  
+
   /* Primary color scale */
   --color-primary-50: #fff9e6;
   --color-primary-100: #fff0b3;
   --color-primary-200: #ffe680;
   --color-primary-300: #ffdc4d;
   --color-primary-400: #ffd21a;
-  --color-primary-500: #FFBB48;
+  --color-primary-500: #ffbb48;
   --color-primary-600: #e6a641;
   --color-primary-700: #cc913a;
   --color-primary-800: #b37c33;
   --color-primary-900: #99672c;
-  
+
   /* Dark color scale */
   --color-dark-50: #f7f7f7;
   --color-dark-100: #e3e3e3;
@@ -51,76 +51,78 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   .overscroll-contain {
     overscroll-behavior: contain;
   }
-  
+
   /* Mobile-first breakpoint for extra small screens */
   @media (min-width: 475px) {
     .xs\:inline {
       display: inline;
     }
   }
-  
+
   /* Animation utilities */
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
-  
+
   .animate-slide-up {
     animation: slideUp 0.6s ease-out;
   }
-  
+
   .animate-slide-down {
     animation: slideDown 0.3s ease-out;
   }
-  
+
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out;
   }
-  
+
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
-  
+
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  
+
   .animate-bounce-subtle {
     animation: bounceSubtle 2s infinite;
   }
-  
+
   .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
   }
-  
+
   .animate-slide-in-left {
     animation: slideInLeft 0.5s ease-out;
   }
-  
+
   .animate-slide-in-right {
     animation: slideInRight 0.5s ease-out;
   }
-  
+
   .hover-lift {
     transition: all 0.3s ease;
   }
-  
+
   .hover-lift:hover {
     transform: translateY(-8px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
-  
+
   .hover-scale {
     transition: transform 0.2s ease;
   }
-  
+
   .hover-scale:hover {
     transform: scale(1.05);
   }
@@ -170,7 +172,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -179,7 +182,11 @@
 }
 
 @keyframes bounceSubtle {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -192,10 +199,12 @@
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 20px -10px #FFBB48;
+    box-shadow: 0 0 20px -10px #ffbb48;
   }
   to {
-    box-shadow: 0 0 20px -5px #FFBB48, 0 0 30px -10px #FFBB48;
+    box-shadow:
+      0 0 20px -5px #ffbb48,
+      0 0 30px -10px #ffbb48;
   }
 }
 
