@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Upload, Check, X, Plus, Edit } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, Check, X, Plus, Edit, Send, Mail, CalendarX, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   useEvent,
   useEventPlanning,
@@ -10,6 +10,8 @@ import {
   useEventTimeline,
   useSaveEventTimeline,
   useRole,
+  useSendEventInvitation,
+  useNotification,
 } from '@/hooks';
 import PlanningForm from './components/PlanningForm';
 import MusicIdeasForm from './components/MusicIdeasForm';
@@ -94,10 +96,31 @@ const EventPlanning: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [isProcessingNotes, setIsProcessingNotes] = useState(false);
 
+  // Invitation hooks and state
+  const { mutate: sendInvitation, isPending: isSendingInvitation } = useSendEventInvitation();
+  const { addNotification } = useNotification();
+
+  // Accordion state management - timeline is open by default
+  type AccordionSection = 'timeline' | 'planning' | 'music';
+  const [openSection, setOpenSection] = useState<AccordionSection>('timeline');
+
   // State for AI-filled data
   const [aiFilledPlanningData, setAiFilledPlanningData] = useState<PlanningFormData | null>(null);
   const [aiFilledMusicData, setAiFilledMusicData] = useState<MusicIdeasFormData | null>(null);
   const [aiFilledTimelineData, setAiFilledTimelineData] = useState<TimelineFormData | null>(null);
+
+  // State for chat button loading
+  const [isChatButtonLoading, setIsChatButtonLoading] = useState(false);
+  
+  // Ref to prevent multiple rapid clicks (even faster than state updates)
+  const isProcessingClickRef = useRef(false);
+  
+  // Additional loading states for other action buttons
+  const [isInvitationLoading, setIsInvitationLoading] = useState(false);
+  const [isEditModalLoading, setIsEditModalLoading] = useState(false);
+  const [isUploadModalLoading, setIsUploadModalLoading] = useState(false);
+  const [isParsingNotesLoading, setIsParsingNotesLoading] = useState(false);
+  const [isAddingActivity, setIsAddingActivity] = useState(false);
 
   // Add music ideas hooks
   const {
@@ -114,6 +137,38 @@ const EventPlanning: React.FC = () => {
     error: timelineError,
   } = useEventTimeline(eventId);
   const saveTimelineMutation = useSaveEventTimeline();
+
+  // Effect to check if data is already in correct format from chat workflow
+  useEffect(() => {
+    console.log('=== CHAT DATA CHECK ===');
+    console.log('Planning data:', planningData);
+    console.log('Music ideas data:', musicIdeasData);
+    console.log('Timeline data:', timelineData);
+
+    // Check if planning data exists and is in the correct format (already processed by backend)
+    if (planningData?.planning_data && !Array.isArray(planningData.planning_data)) {
+      console.log('Planning data already in form format, using directly');
+      setAiFilledPlanningData(planningData.planning_data as PlanningFormData);
+    }
+
+    // Check if music data exists and is in the correct format
+    if (musicIdeasData?.music_ideas && 
+        typeof musicIdeasData.music_ideas === 'object' && 
+        'must_play' in musicIdeasData.music_ideas) {
+      console.log('Music data already in form format, using directly');
+      setAiFilledMusicData(musicIdeasData.music_ideas as MusicIdeasFormData);
+    }
+
+    // Check if timeline data exists and is in the correct format
+    if (timelineData?.timeline_data && 
+        typeof timelineData.timeline_data === 'object' &&
+        'timeline_items' in timelineData.timeline_data) {
+      console.log('Timeline data already in form format, using directly');
+      setAiFilledTimelineData(timelineData.timeline_data as TimelineFormData);
+    }
+    
+    console.log('=== END CHAT DATA CHECK ===');
+  }, [planningData, musicIdeasData, timelineData]);
 
   const addBotMessage = useCallback((text: string, options?: string[]) => {
     setIsTyping(true);
@@ -163,7 +218,11 @@ const EventPlanning: React.FC = () => {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const handleOptionClick = (option: string) => {
+  const handleOptionClick = async (option: string) => {
+    console.log('Processing option click:', option);
+    
+    try {
+      // Add user message
     addUserMessage(option);
 
     if (currentStep === 'initial' && option === 'YES') {
@@ -187,12 +246,30 @@ const EventPlanning: React.FC = () => {
       }
     } else if (currentStep === 'planning-form' && option === 'Start Questions') {
       // Create an empty planning record before showing the form
-      handleCreateEmptyPlanningRecord();
+        await handleCreateEmptyPlanningRecord();
+      }
+    } catch (error) {
+      console.error('Error handling option click:', error);
+    } finally {
+      // Add a small delay to prevent rapid clicking and ensure smooth UX
+      setTimeout(() => {
+        console.log('Resetting button loading state');
+        isProcessingClickRef.current = false;
+        setIsChatButtonLoading(false);
+      }, 500);
     }
   };
 
   const handleTimelineUpload = () => {
+    console.log('Opening timeline upload modal');
     setIsDocumentUploadModalOpen(true);
+    
+    // Reset loading state immediately since modal opening doesn't need extended loading
+    setTimeout(() => {
+      console.log('Resetting button loading state for timeline upload');
+      isProcessingClickRef.current = false;
+      setIsChatButtonLoading(false);
+    }, 100);
   };
 
   const handleCreateEmptyPlanningRecord = async () => {
@@ -557,6 +634,49 @@ const EventPlanning: React.FC = () => {
     }
   };
 
+  // Function to toggle accordion sections
+  const toggleSection = (section: AccordionSection) => {
+    setOpenSection(openSection === section ? openSection : section);
+  };
+
+  // Function to handle invitation sending
+  const handleSendInvitation = useCallback(() => {
+    if (isInvitationLoading) {
+      console.log('Invitation send blocked - already processing');
+      return;
+    }
+
+    if (!event?.client_email) {
+      addNotification({
+        type: 'error',
+        title: 'Cannot send invitation',
+        message: 'This event does not have a client email address.',
+      });
+      return;
+    }
+
+    setIsInvitationLoading(true);
+
+    sendInvitation(eventId, {
+      onSuccess: () => {
+        addNotification({
+          type: 'success',
+          title: 'Invitation sent!',
+          message: `Invitation has been sent to ${event.client_email}.`,
+        });
+        setIsInvitationLoading(false);
+      },
+      onError: (error: any) => {
+        addNotification({
+          type: 'error',
+          title: 'Failed to send invitation',
+          message: error.response?.data?.message || 'Please try again.',
+        });
+        setIsInvitationLoading(false);
+      },
+    });
+  }, [eventId, event?.client_email, sendInvitation, addNotification, isInvitationLoading]);
+
   const isLoading = eventLoading || planningLoading || musicIdeasLoading || timelineLoading;
   const error = eventError || planningError || musicIdeasError || timelineError;
 
@@ -572,13 +692,31 @@ const EventPlanning: React.FC = () => {
   }
 
   if (error || !event) {
+    // Check if it's a past event error for DJs
+    const isPastEventError = error && 
+      (error as any)?.response?.data?.is_past_event === true;
+    
     return (
       <div className="min-h-screen bg-secondary flex items-center justify-center">
         <div className="text-center">
+          {isPastEventError ? (
+            <>
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <CalendarX className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Event Unavailable</h3>
+              <p className="text-gray-600 mb-4">
+                This event has already passed and cannot be accessed for planning.
+              </p>
+            </>
+          ) : (
+            <>
           <h3 className="text-lg font-semibold text-white mb-2">Event Not Found</h3>
           <p className="text-gray-600 mb-4">
             The event you&apos;re looking for doesn&apos;t exist.
           </p>
+            </>
+          )}
           <button
             onClick={() => navigate(isAdmin ? '/admin/events' : '/events')}
             className="bg-brand hover:bg-brand-dark text-secondary font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
@@ -654,13 +792,71 @@ const EventPlanning: React.FC = () => {
                 </div>
               </div>
               {canEditEvents && (
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2">
+                  {/* Send Invitation Button */}
+                  {event.client_email && (
                   <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+                      onClick={handleSendInvitation}
+                      disabled={isSendingInvitation || isInvitationLoading}
+                      className={`flex items-center space-x-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${
+                        (isSendingInvitation || isInvitationLoading)
+                          ? 'bg-gray-400 cursor-not-allowed text-white'
+                          : 'bg-brand hover:bg-brand-dark text-secondary'
+                      }`}
+                      title={`Send invitation to ${event.client_email}`}
+                    >
+                      {(isSendingInvitation || isInvitationLoading) ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Send Invitation</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {!event.client_email && (
+                    <div 
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-500 font-medium rounded-lg"
+                      title="Add client email to send invitation"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>No Email</span>
+                    </div>
+                  )}
+                  
+                  {/* Edit Event Button */}
+                  <button
+                    onClick={() => {
+                      if (isEditModalLoading) {
+                        console.log('Edit modal open blocked - already processing');
+                        return;
+                      }
+                      setIsEditModalLoading(true);
+                      setIsEditModalOpen(true);
+                      setTimeout(() => setIsEditModalLoading(false), 300);
+                    }}
+                    disabled={isEditModalLoading}
+                    className={`flex items-center space-x-2 px-4 py-2 font-medium rounded-lg transition-colors duration-200 ${
+                      isEditModalLoading
+                        ? 'bg-gray-400 cursor-not-allowed text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
                   >
+                    {isEditModalLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        <span>Opening...</span>
+                      </>
+                    ) : (
+                      <>
                     <Edit className="w-4 h-4" />
-                    <span>Edit Event</span>
+                        <span>Edit Event</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
@@ -686,11 +882,33 @@ const EventPlanning: React.FC = () => {
                   {/* Upload Document Button for DJ users */}
                   {canUploadDocuments && (
                     <button
-                      onClick={() => setIsDocumentUploadModalOpen(true)}
-                      className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm"
+                      onClick={() => {
+                        if (isUploadModalLoading) {
+                          console.log('Upload modal open blocked - already processing');
+                          return;
+                        }
+                        setIsUploadModalLoading(true);
+                        setIsDocumentUploadModalOpen(true);
+                        setTimeout(() => setIsUploadModalLoading(false), 300);
+                      }}
+                      disabled={isUploadModalLoading}
+                      className={`flex items-center space-x-2 px-3 py-2 font-medium rounded-lg transition-colors duration-200 text-sm sm:w-auto w-full ${
+                        isUploadModalLoading
+                          ? 'bg-gray-400 cursor-not-allowed text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
                     >
+                      {isUploadModalLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          <span>Opening...</span>
+                        </>
+                      ) : (
+                        <>
                       <Upload className="w-4 h-4" />
                       <span>Upload Document</span>
+                        </>
+                      )}
                     </button>
                   )}
 
@@ -728,7 +946,7 @@ const EventPlanning: React.FC = () => {
                       Type your notes here and AI will automatically fill the forms with relevant
                       information.
                     </p>
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2 sm:flex-row flex-col">
                       <textarea
                         value={notes}
                         onChange={e => setNotes(e.target.value)}
@@ -738,11 +956,19 @@ const EventPlanning: React.FC = () => {
                         disabled={isProcessingNotes}
                       />
                       <button
-                        onClick={() => handleNotesProcessed(notes)}
-                        disabled={!notes.trim() || isProcessingNotes}
+                        onClick={() => {
+                          if (isParsingNotesLoading || isProcessingNotes) {
+                            console.log('Notes parsing blocked - already processing');
+                            return;
+                          }
+                          setIsParsingNotesLoading(true);
+                          handleNotesProcessed(notes);
+                          setTimeout(() => setIsParsingNotesLoading(false), 1000);
+                        }}
+                        disabled={!notes.trim() || isProcessingNotes || isParsingNotesLoading}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 text-sm flex items-center space-x-2"
                       >
-                        {isProcessingNotes ? (
+                        {(isProcessingNotes || isParsingNotesLoading) ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             <span>Processing...</span>
@@ -774,23 +1000,125 @@ const EventPlanning: React.FC = () => {
               )}
             </div>
 
-            {/* Planning Sections Form */}
+            {/* Accordion Forms */}
+            
+            {/* Timeline Form - First (opened by default) */}
+            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in">
+              <div 
+                className="p-3 sm:p-4 border-b border-gray-200 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors duration-200"
+                onClick={() => toggleSection('timeline')}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base sm:text-lg">⏰</span>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Timeline</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:block hidden">
+                        Plan your wedding day timeline with activities and time slots!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {openSection === 'timeline' && (
+                      <div className="flex items-center justify-between sm:justify-end space-x-3">
+                        <div className="text-xs text-gray-500 items-center sm:flex hidden">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                          Auto-saving
+                        </div>
+                        <button
+                          id="timeline-add-activity-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isAddingActivity) {
+                              console.log('Add activity blocked - already processing');
+                              return;
+                            }
+                            setIsAddingActivity(true);
+                            // Simulate adding activity action
+                            setTimeout(() => {
+                              console.log('Activity add completed');
+                              setIsAddingActivity(false);
+                            }, 800);
+                          }}
+                          disabled={isAddingActivity}
+                          className={`px-3 py-2 sm:px-4 font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm ${
+                            isAddingActivity
+                              ? 'bg-gray-400 cursor-not-allowed text-white'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {isAddingActivity ? (
+                            <>
+                              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              <span className="hidden sm:inline">Adding...</span>
+                              <span className="sm:hidden">Adding</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline">Add Activity</span>
+                              <span className="sm:hidden">Add</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                    {openSection === 'timeline' ? (
+                      <ChevronUp className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
+              {openSection === 'timeline' && (
+                <div className="animate-scale-in">
+                  <TimelineForm
+                    onSave={handleTimelineSave}
+                    initialData={aiFilledTimelineData || timelineData?.timeline_data || undefined}
+                    key={`timeline-${aiFilledTimelineData ? 'ai-filled' : timelineData?.timeline_data ? 'loaded' : 'default'}`}
+                  />
+                  {/* Debug info */}
+                  <div className="p-2 bg-gray-100 text-xs text-gray-600">
+                    Debug: Timeline data available: {timelineData?.timeline_data ? 'Yes' : 'No'}
+                    {aiFilledTimelineData && (
+                      <div className="text-green-600">
+                        AI-filled timeline data available:{' '}
+                        {aiFilledTimelineData.timeline_items?.length || 0} items
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Event Planning Form - Second */}
             <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-100">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50">
+              <div 
+                className="p-3 sm:p-4 border-b border-gray-200 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors duration-200"
+                onClick={() => toggleSection('planning')}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-base sm:text-lg">📋</span>
                     <div>
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                        Planning Sections
+                        Event Planning
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:block hidden">
                         Fill out the details to help us plan your perfect day!
                       </p>
                     </div>
                   </div>
+                  {openSection === 'planning' ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
                 </div>
               </div>
+              {openSection === 'planning' && (
+                <div className="animate-scale-in">
               <PlanningForm
                 onSave={handlePlanningFormSave}
                 initialData={aiFilledPlanningData || planningData?.planning_data || undefined}
@@ -822,11 +1150,16 @@ const EventPlanning: React.FC = () => {
                   </div>
                 )}
               </div>
+                </div>
+              )}
             </div>
 
-            {/* Music Ideas Form */}
+            {/* Music Ideas Form - Third */}
             <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-200">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-purple-50">
+              <div 
+                className="p-3 sm:p-4 border-b border-gray-200 bg-purple-50 cursor-pointer hover:bg-purple-100 transition-colors duration-200"
+                onClick={() => toggleSection('music')}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-base sm:text-lg">🎵</span>
@@ -834,13 +1167,20 @@ const EventPlanning: React.FC = () => {
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                         Music Ideas
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:block hidden">
                         Add your music preferences and special song requests!
                       </p>
                     </div>
                   </div>
+                  {openSection === 'music' ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
                 </div>
               </div>
+              {openSection === 'music' && (
+                <div className="animate-scale-in">
               <MusicIdeasForm
                 onSave={handleMusicIdeasSave}
                 initialData={aiFilledMusicData || musicIdeasData?.music_ideas || undefined}
@@ -861,53 +1201,8 @@ const EventPlanning: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Timeline Form */}
-            <div className="bg-white rounded-lg shadow-lg hover-lift animate-scale-in animation-delay-300">
-              <div className="p-3 sm:p-4 border-b border-gray-200 bg-green-50">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-base sm:text-lg">⏰</span>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">Timeline</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                        Plan your wedding day timeline with activities and time slots!
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between sm:justify-end space-x-3">
-                    <div className="text-xs text-gray-500 flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                      Auto-saving
-                    </div>
-
-                    <button
-                      id="timeline-add-activity-btn"
-                      className="px-3 py-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2 text-sm"
-                    >
-                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Add Activity</span>
-                      <span className="sm:hidden">Add</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <TimelineForm
-                onSave={handleTimelineSave}
-                initialData={aiFilledTimelineData || timelineData?.timeline_data || undefined}
-                key={`timeline-${aiFilledTimelineData ? 'ai-filled' : timelineData?.timeline_data ? 'loaded' : 'default'}`}
-              />
-              {/* Debug info */}
-              <div className="p-2 bg-gray-100 text-xs text-gray-600">
-                Debug: Timeline data available: {timelineData?.timeline_data ? 'Yes' : 'No'}
-                {aiFilledTimelineData && (
-                  <div className="text-green-600">
-                    AI-filled timeline data available:{' '}
-                    {aiFilledTimelineData.timeline_items?.length || 0} items
                   </div>
                 )}
-              </div>
             </div>
           </div>
         ) : (
@@ -974,19 +1269,46 @@ const EventPlanning: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => {
+                        // Immediate protection - set loading states first
+                        if (isChatButtonLoading || isProcessingClickRef.current) {
+                          console.log('Click blocked by protection');
+                          return;
+                        }
+                        
+                        // Set protections immediately before any processing
+                        isProcessingClickRef.current = true;
+                        setIsChatButtonLoading(true);
+                        
+                        // Small delay to ensure state propagates, then process
+                        setTimeout(() => {
                         if (option === 'Upload Timeline') {
                           handleTimelineUpload();
                         } else {
                           handleOptionClick(option);
                         }
+                        }, 10);
                       }}
-                      className="bg-brand hover:bg-brand-dark text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 animate-glow text-sm"
+                      disabled={isChatButtonLoading || isProcessingClickRef.current}
+                      className={`px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
+                        (isChatButtonLoading || isProcessingClickRef.current)
+                          ? 'bg-gray-400 cursor-not-allowed text-white'
+                          : 'bg-brand hover:bg-brand-dark text-white hover:scale-105 animate-glow'
+                      }`}
                     >
+                      {(isChatButtonLoading || isProcessingClickRef.current) ? (
+                        <>
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
                       {option === 'Upload Timeline' && <Upload className="w-3 h-3 sm:w-4 sm:h-4" />}
                       {option === 'Start Questions' && (
                         <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
                       )}
                       <span>{option}</span>
+                        </>
+                      )}
                     </button>
                   ))}
                 </div>

@@ -127,73 +127,35 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>Wedding Event Invitation</h1>
-            <p>You've been invited to join a special wedding event!</p>
+            <h1>{{ $event->name }}</h1>
+            <p>{{ \Carbon\Carbon::parse($event->event_date)->format('l, F j, Y') }}</p>
+            @if($event->venue_name)
+            <p>{{ $event->venue_name }}</p>
+            @endif
         </div>
 
         <!-- Content -->
         <div class="content">
-            <h2>Hello {{ $invitation->client_name ?? 'there' }}!</h2>
-            
-            <p><strong>{{ $dj->name }}</strong> from <strong>{{ $dj->organization }}</strong> has invited you to join their wedding event planning. This is an exciting opportunity to collaborate on creating the perfect celebration!</p>
+            <!-- Bullet Points -->
+            <p>You'll be able to:</p>
+            <ul>
+                <li>Share your music preferences and special songs</li>
+                <li>Chat directly with your DJ about the event</li>
+                <li>Access the event timeline and schedule</li>
+                <li>View and collaborate on event planning details</li>
+            </ul>
 
-            <!-- Event Details -->
-            <div class="event-details">
-                <h3>Event Information</h3>
-                <div class="detail-row">
-                    <span class="detail-label">Event Name:</span>
-                    <span class="detail-value"><strong>{{ $event->name }}</strong></span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Event Date:</span>
-                    <span class="detail-value">{{ \Carbon\Carbon::parse($event->event_date)->format('l, F j, Y') }}</span>
-                </div>
-                @if($event->venue_name)
-                <div class="detail-row">
-                    <span class="detail-label">Venue:</span>
-                    <span class="detail-value">{{ $event->venue_name }}</span>
-                </div>
-                @endif
-                @if($event->venue_city && $event->venue_state)
-                <div class="detail-row">
-                    <span class="detail-label">Location:</span>
-                    <span class="detail-value">{{ $event->venue_city }}, {{ $event->venue_state }}</span>
-                </div>
-                @endif
+            <!-- Expiry Notice (Light Yellow Box) -->
+            <div class="expiry-notice">
+                <strong>Important:</strong> This invitation will expire on {{ \Carbon\Carbon::parse($invitation->expires_at)->format('F j, Y \a\t g:i A') }}. Please accept it before then to join the event planning.
             </div>
 
-            <!-- DJ Information -->
-            <div class="dj-info">
-                <h3>Your DJ</h3>
-                <p><strong>{{ $dj->name }}</strong><br>
-                {{ $dj->organization }}</p>
-                <p>Your DJ is ready to work with you to create the perfect musical experience for your special day!</p>
-            </div>
-
-            <!-- Call to Action -->
+            <!-- Call to Action Button -->
             <div style="text-align: center;">
                 <a href="{{ $invitationUrl }}" class="cta-button">
                     Accept Invitation & Join Event
                 </a>
             </div>
-
-            <!-- Expiry Notice -->
-            <div class="expiry-notice">
-                <strong>Important:</strong> This invitation will expire on {{ \Carbon\Carbon::parse($invitation->expires_at)->format('F j, Y \a\t g:i A') }}. Please accept it before then to join the event planning.
-            </div>
-
-            <p>Once you accept the invitation, you'll be able to:</p>
-            <ul>
-                <li>View and edit event planning details</li>
-                <li>Share your music preferences and special songs</li>
-                <li>Chat directly with your DJ about the event</li>
-                <li>Access the event timeline and schedule</li>
-            </ul>
-
-            <p>If you have any questions, feel free to reach out to {{ $dj->name }} directly.</p>
-
-            <p>Best regards,<br>
-            The EventSync Team</p>
         </div>
 
         <!-- Footer -->

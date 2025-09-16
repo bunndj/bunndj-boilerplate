@@ -70,6 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('events/{event}/documents/parse-notes', [DocumentController::class, 'parseNotes']);
             Route::get('events/{event}/documents', [DocumentController::class, 'getEventDocuments']);
             Route::delete('documents/{document}', [DocumentController::class, 'deleteDocument']);
+            
+            // Event invitation routes
+            Route::post('events/{event}/send-invitation', [EventController::class, 'sendInvitation']);
         });
     });
     

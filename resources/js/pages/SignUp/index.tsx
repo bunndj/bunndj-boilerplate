@@ -7,6 +7,7 @@ import { dashboardRoute } from '@/routes/routeConfig';
 import { registerSchema, type RegisterFormData } from '@/schemas';
 import { PhoneInput } from '@/components/Inputs';
 import { useEffect } from 'react';
+import { Logo } from '@/components/common';
 
 function SignUp() {
   const { register: registerUser } = useAuth();
@@ -104,20 +105,19 @@ function SignUp() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-3 sm:mb-4">
-              <img
-                src="/assets/logo.png"
-                alt="Bunn DJ Planning Logo"
-                className="h-10 sm:h-12 w-auto object-contain"
-                style={{ aspectRatio: '160/51' }}
+              <Logo 
+                linkTo={undefined}
+                imageClassName="h-10 sm:h-12"
+                showHoverEffect={false}
               />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">
-              {invitationId ? 'Complete Your Registration' : 'Join DJ Planning Hub'}
+              {invitationId ? 'Complete Your Registration' : 'Join EventSync'}
             </h1>
             <p className="text-white text-sm sm:text-base">
               {invitationId
                 ? "You've been invited to join a wedding event. Complete your registration to get started."
-                : 'Create your DJ account and start planning amazing events'}
+                : 'Create your account and start planning amazing events'}
             </p>
           </div>
 

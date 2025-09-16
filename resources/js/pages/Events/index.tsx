@@ -19,6 +19,7 @@ import {
   CheckCircle,
   XCircle,
   Clock3,
+  CalendarX,
 } from 'lucide-react';
 
 const Events: React.FC = () => {
@@ -63,6 +64,12 @@ const Events: React.FC = () => {
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  const isEventPast = (eventDate: string) => {
+    const today = new Date();
+    const eventDateObj = new Date(eventDate);
+    return eventDateObj < today;
   };
 
   const getInvitationStatus = (event: Event) => {
@@ -197,25 +204,47 @@ const Events: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {events.map((event: Event, index: number) => (
-              <div
-                key={event.id}
-                className="bg-white rounded-lg shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all duration-200 cursor-pointer transform hover:scale-[1.02] mx-2 sm:mx-0 hover-lift animate-scale-in group"
-                style={{ animationDelay: `${index * 100}ms` }}
-                onClick={() => navigate(`/events/${event.id}`)}
-              >
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+            {events.map((event: Event, index: number) => {
+              const isPast = isEventPast(event.event_date);
+              return (
+                <div
+                  key={event.id}
+                  className={`bg-white rounded-lg shadow-lg p-3 sm:p-4 md:p-6 transition-all duration-200 hover-lift animate-scale-in group ${
+                    isPast 
+                      ? 'opacity-60 cursor-not-allowed' 
+                      : 'hover:shadow-xl cursor-pointer transform hover:scale-[1.02]'
+                  }`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                  onClick={() => {
+                    if (!isPast) {
+                      navigate(`/events/${event.id}`);
+                    } else {
+                      showError('Event Unavailable', 'This event has already passed and cannot be accessed.');
+                    }
+                  }}
+                >
                 <div className="flex justify-between items-start mb-3 sm:mb-4">
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-2 leading-tight group-hover:text-brand transition-colors duration-200">
                     {event.name}
                   </h3>
                   <div className="flex flex-col items-end space-y-1">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize whitespace-nowrap group-hover:bg-brand group-hover:text-secondary transition-colors duration-200">
+                    {isPast && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center space-x-1">
+                        <CalendarX className="w-3 h-3" />
+                        <span>Past Event</span>
+                      </span>
+                    )}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize whitespace-nowrap transition-colors duration-200 ${
+                      isPast 
+                        ? 'bg-gray-100 text-gray-600' 
+                        : 'bg-blue-100 text-blue-800 group-hover:bg-brand group-hover:text-secondary'
+                    }`}>
                       {event.service_package}
                     </span>
                     {(() => {
                       const invitationStatus = getInvitationStatus(event);
-                      if (invitationStatus) {
+                      if (invitationStatus && !isPast) {
                         const IconComponent = invitationStatus.icon;
                         return (
                           <span
@@ -301,7 +330,8 @@ const Events: React.FC = () => {
                   })()}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

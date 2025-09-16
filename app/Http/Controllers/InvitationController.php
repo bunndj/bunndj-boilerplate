@@ -67,8 +67,8 @@ class InvitationController extends Controller
             'expires_at' => Carbon::now()->addDays($expiresInDays),
         ]);
 
-        // TODO: Send email notification
-        // Mail::to($request->client_email)->send(new EventInvitationMail($invitation));
+        // Send email notification
+        Mail::to($request->client_email)->send(new \App\Mail\EventInvitationMail($invitation));
 
         return response()->json([
             'message' => 'Invitation sent successfully',

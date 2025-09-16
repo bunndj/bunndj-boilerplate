@@ -377,7 +377,7 @@ const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                           <span className="text-gray-300 capitalize">
                             {key.replace(/([A-Z])/g, ' $1').trim()}:
                           </span>
-                          <span className="text-gray-900 font-medium">
+                          <span className="text-gray-900 font-medium truncate">
                             {Array.isArray(value) ? value.length : String(value)}
                           </span>
                         </div>

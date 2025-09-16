@@ -219,7 +219,7 @@ const EventModal: React.FC<EventModalProps> = ({
           { id: event.id, data },
           {
             onSuccess: (response: any) => {
-              // Check if email was changed and invitation was sent
+              // Check if email was changed and invitation was updated
               const emailChanged = response?.data?.email_changed;
               const invitation = response?.data?.invitation;
 
@@ -227,7 +227,7 @@ const EventModal: React.FC<EventModalProps> = ({
 
               if (emailChanged && invitation) {
                 notificationMessage +=
-                  ' The invitation has been updated and sent to the new client email.';
+                  ' The invitation has been updated and is ready to send.';
               } else if (emailChanged) {
                 notificationMessage += ' Client email has been updated.';
               }
@@ -460,7 +460,12 @@ const EventModal: React.FC<EventModalProps> = ({
             <div className="p-4 sm:p-6">
               {/* Client Tab */}
               {activeTab === 'client' && (
-                <ClientTab register={register} watch={watch} setValue={setValue} errors={errors} />
+                <ClientTab 
+                  register={register} 
+                  watch={watch} 
+                  setValue={setValue} 
+                  errors={errors}
+                />
               )}
 
               {/* Details Tab */}

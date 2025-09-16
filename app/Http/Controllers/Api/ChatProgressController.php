@@ -135,6 +135,7 @@ class ChatProgressController extends Controller
             'chat_progress' => $chatProgress,
             'next_step_data' => $nextStepData,
             'is_completed' => $chatProgress->isCompleted(),
+            'dj_calendar_link' => $event->dj ? $event->dj->calendar_link : null,
         ]);
     }
 
@@ -321,36 +322,91 @@ Your task is to analyze a conversation between a bot and a user about wedding pl
 Return your response in this exact JSON format:
 {
   \"planning_data\": {
-    \"client_name\": \"extracted name\",
-    \"fiance_name\": \"extracted partner name\",
-    \"wedding_date\": \"extracted date\",
-    \"wedding_location\": \"extracted location\",
-    \"guest_count\": \"extracted number\",
-    \"ceremony_time\": \"extracted time\",
-    \"ceremony_location\": \"extracted location\",
-    \"cocktail_hour_location\": \"extracted location\",
-    \"introduction_text\": \"extracted text\",
-    \"first_dance_song\": \"extracted song\",
-    \"dinner_style\": \"extracted style\",
-    \"welcome_speaker_name\": \"extracted name\"
+    \"mailingAddress\": \"extracted mailing address\",
+    \"guestCount\": \"extracted number as integer\",
+    \"coordinatorEmail\": \"extracted coordinator email\",
+    \"photographerEmail\": \"extracted photographer email\",
+    \"videographerEmail\": \"extracted videographer email\",
+    \"isWedding\": true,
+    \"ceremonyCeremonyAudio\": false,
+    \"ceremonyStartTime\": \"extracted ceremony start time (HH:MM format)\",
+    \"ceremonyLocation\": \"extracted ceremony location\",
+    \"officiantName\": \"extracted officiant name\",
+    \"providingCeremonyMusic\": true,
+    \"guestArrivalMusic\": \"extracted prelude/arrival music\",
+    \"ceremonyNotes\": \"extracted ceremony notes\",
+    \"providingCeremonyMicrophones\": false,
+    \"whoNeedsMic\": \"extracted who needs microphones\",
+    \"ceremonyDjNotes\": \"extracted DJ ceremony notes\",
+    \"uplighting\": false,
+    \"photoBooth\": false,
+    \"cocktailHourMusic\": false,
+    \"cocktailHourLocation\": \"extracted cocktail hour location\",
+    \"cocktailMusic\": \"extracted cocktail hour music details\",
+    \"cocktailNotes\": \"extracted cocktail hour notes\",
+    \"introductionsTime\": \"extracted introductions time (HH:MM format)\",
+    \"parentsEntranceSong\": \"extracted parents entrance song\",
+    \"weddingPartyIntroSong\": \"extracted wedding party introduction song\",
+    \"coupleIntroSong\": \"extracted couple introduction song\",
+    \"weddingPartyIntroductions\": \"extracted wedding party introduction details\",
+    \"specialDances\": \"extracted special dances (first dance, father-daughter, mother-son, etc.)\",
+    \"otherNotes\": \"extracted other planning notes\",
+    \"dinnerMusic\": \"extracted dinner music details\",
+    \"dinnerStyle\": \"extracted dinner style\",
+    \"welcomeBy\": \"extracted welcome speaker name\",
+    \"blessingBy\": \"extracted blessing speaker name\",
+    \"toasts\": \"extracted toast details\",
+    \"receptionNotes\": \"extracted reception notes\",
+    \"exitDescription\": \"extracted exit/send-off details\",
+    \"otherComments\": \"extracted other comments\",
+    \"spotifyPlaylists\": \"extracted Spotify playlist details\",
+    \"lineDances\": \"extracted line dance requests\",
+    \"takeRequests\": \"extracted music request policy\",
+    \"musicNotes\": \"extracted music notes\"
   },
   \"music_data\": {
-    \"ceremony\": {
-      \"parents_grandparents_entrance\": \"extracted song\",
-      \"officiant_groom\": \"extracted song\",
-      \"groomsmen\": \"extracted song\",
-      \"bridesmaids\": \"extracted song\",
-      \"processional\": \"extracted song\",
-      \"recessional\": \"extracted song\"
-    },
-    \"reception\": {
-      \"introduction\": \"extracted song\",
-      \"first_dance\": \"extracted song\",
-      \"dinner_playlist\": \"extracted playlist\"
-    }
+    \"must_play\": [
+      {
+        \"song_title\": \"extracted first dance song\",
+        \"artist\": \"extracted artist\",
+        \"client_visible_title\": \"First Dance\"
+      },
+      {
+        \"song_title\": \"extracted ceremony processional\",
+        \"artist\": \"extracted artist\",
+        \"client_visible_title\": \"Processional\"
+      }
+    ],
+    \"play_if_possible\": [
+      {
+        \"song_title\": \"extracted song for cocktail hour\",
+        \"artist\": \"extracted artist\",
+        \"client_visible_title\": \"Cocktail Hour\"
+      }
+    ],
+    \"dedication\": [
+      {
+        \"song_title\": \"extracted special dedication song\",
+        \"artist\": \"extracted artist\",
+        \"client_visible_title\": \"Special Dedication\"
+      }
+    ],
+    \"play_only_if_requested\": [],
+    \"do_not_play\": [],
+    \"guest_request\": []
   },
   \"timeline_data\": {
-    \"timeline_items\": []
+    \"timeline_items\": [
+      {
+        \"id\": \"ceremony-time\",
+        \"name\": \"Ceremony\",
+        \"start_time\": \"extracted ceremony start time\",
+        \"end_time\": \"extracted ceremony end time\",
+        \"notes\": \"Wedding ceremony\",
+        \"time_offset\": 0,
+        \"order\": 0
+      }
+    ]
   }
 }
 

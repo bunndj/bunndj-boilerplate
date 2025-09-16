@@ -118,6 +118,9 @@ function ClientEventDetails() {
   // State for chat progress
   const [chatProgress, setChatProgress] = useState<any>(null);
   const [isChatCompleted, setIsChatCompleted] = useState(false);
+  
+  // Store the chat saveAnswer function to call after successful upload
+  const [chatSaveAnswer, setChatSaveAnswer] = useState<((answer: string) => Promise<void>) | null>(null);
 
   // Fetch chat progress
   const fetchChatProgress = useCallback(async () => {
@@ -463,7 +466,18 @@ function ClientEventDetails() {
         console.log('🔵 [CLIENT-DOC] Chat completed, calling handleDocumentProcessingComplete');
         handleDocumentProcessingComplete();
       } else {
-        console.log('🟡 [CLIENT-DOC] Chat not completed, staying in chat workflow');
+        console.log('🟡 [CLIENT-DOC] Chat not completed, saving answer to progress workflow');
+        // Save the "Upload Timeline" answer to progress the chat workflow
+        if (chatSaveAnswer) {
+          try {
+            await chatSaveAnswer('Upload Timeline');
+            console.log('🟢 [CLIENT-DOC] Successfully saved Upload Timeline answer');
+          } catch (error) {
+            console.error('🔴 [CLIENT-DOC] Error saving Upload Timeline answer:', error);
+          }
+        } else {
+          console.warn('🟡 [CLIENT-DOC] No chatSaveAnswer function available');
+        }
       }
     } catch (error) {
       console.error('🔴 [CLIENT-DOC] Error applying AI-extracted data:', error);
@@ -490,6 +504,11 @@ function ClientEventDetails() {
 
   const handleTimelineUpload = () => {
     setIsDocumentUploadModalOpen(true);
+  };
+
+  // Callback to store the chat saveAnswer function
+  const handleUploadCompleted = (saveAnswerFn: (answer: string) => Promise<void>) => {
+    setChatSaveAnswer(() => saveAnswerFn);
   };
 
   const handleDocumentProcessingComplete = (filledData?: any) => {
@@ -584,8 +603,8 @@ function ClientEventDetails() {
   }
 
   return (
-    <div className="bg-secondary">
-      <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+    <div className="bg-secondary min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
         {/* Header */}
         <div className="mb-4 animate-slide-up">
           <button
@@ -599,38 +618,38 @@ function ClientEventDetails() {
 
         {/* Event Details Header */}
         {event && (
-          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 hover-lift animate-scale-in">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+          <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 md:p-6 mb-3 sm:mb-4 md:mb-6 hover-lift animate-scale-in">
+            <div className="flex flex-col space-y-3">
               <div className="flex-1">
-                <h1 className="text-xl sm:text-2xl lg:text-2xl sm:text-3xl font-bold text-brand animate-fade-in">
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-brand animate-fade-in break-words">
                   {event.name}
                 </h1>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Date:</span>
-                    <span className="text-gray-800">{extractDateFromISO(event.event_date)}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3 mt-3 text-xs sm:text-sm text-gray-600">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+                    <span className="font-medium text-gray-700">Date:</span>
+                    <span className="text-gray-800 break-words">{extractDateFromISO(event.event_date)}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Setup:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+                    <span className="font-medium text-gray-700">Setup:</span>
                     <span className="text-gray-800">{extractTimeFromISO(event.setup_time)}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Event:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+                    <span className="font-medium text-gray-700">Event:</span>
                     <span className="text-gray-800">
                       {extractTimeFromISO(event.start_time)} - {extractTimeFromISO(event.end_time)}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Venue:</span>
-                    <span className="text-gray-800">{event.venue_name || 'Not specified'}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+                    <span className="font-medium text-gray-700">Venue:</span>
+                    <span className="text-gray-800 break-words">{event.venue_name || 'Not specified'}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Guests:</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+                    <span className="font-medium text-gray-700">Guests:</span>
                     <span className="text-gray-800">{event.guest_count || 'TBD'}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">Package:</span>
-                    <span className="text-gray-800">{event.service_package || 'Not selected'}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+                    <span className="font-medium text-gray-700">Package:</span>
+                    <span className="text-gray-800 break-words">{event.service_package || 'Not selected'}</span>
                   </div>
                 </div>
               </div>
@@ -640,7 +659,7 @@ function ClientEventDetails() {
 
         {/* Conditional Content: Forms or Chat */}
         {showPlanningForm ? (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Completion Header */}
             <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 hover-lift animate-scale-in">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
@@ -673,6 +692,7 @@ function ClientEventDetails() {
             onStartQuestions={handleCreateEmptyPlanningRecord}
             onDocumentProcessed={handleDocumentProcessed}
             onDocumentProcessingComplete={handleDocumentProcessingComplete}
+            onUploadCompleted={handleUploadCompleted}
           />
         )}
       </div>

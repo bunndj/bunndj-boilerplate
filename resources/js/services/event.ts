@@ -78,4 +78,14 @@ export const eventService = {
     const response = await apiClient.get<{ success: boolean; data: Event }>(`/client/events/${id}`);
     return response.data.data;
   },
+
+  /**
+   * Send invitation email for an event
+   */
+  async sendInvitation(eventId: number): Promise<{ success: boolean; message: string; invitation: any }> {
+    const response = await apiClient.post<{ success: boolean; message: string; invitation: any }>(
+      `/events/${eventId}/send-invitation`
+    );
+    return response.data;
+  },
 };

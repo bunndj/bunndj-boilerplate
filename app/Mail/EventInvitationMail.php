@@ -33,7 +33,14 @@ class EventInvitationMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $dj = $this->invitation->dj;
+        $fromName = $dj->name;
+        
         return new Envelope(
+            from: new \Illuminate\Mail\Mailables\Address(
+                config('mail.from.address'),
+                $fromName
+            ),
             subject: 'Wedding Event Invitation - ' . $this->invitation->event->name,
         );
     }

@@ -149,7 +149,7 @@ class EventController extends Controller
             // Create the event
             $event = Event::create($validatedData);
 
-            // Send invitation email if client email is provided
+            // Create invitation if client email is provided (but don't send email)
             $invitation = null;
             if (!empty($validatedData['client_email'])) {
                 try {
@@ -162,12 +162,11 @@ class EventController extends Controller
                         'expires_at' => Carbon::now()->addDays(7), // 7 days expiry
                     ]);
 
-                    // Send invitation email
-                    Mail::to($validatedData['client_email'])->send(new EventInvitationMail($invitation));
+                    // NOTE: Email sending removed - will be triggered manually via send button
 
                 } catch (\Exception $emailException) {
-                    // Log email error but don't fail the event creation
-                    \Log::error('Failed to send invitation email', [
+                    // Log error but don't fail the event creation
+                    \Log::error('Failed to create invitation', [
                         'event_id' => $event->id,
                         'client_email' => $validatedData['client_email'],
                         'error' => $emailException->getMessage()
@@ -177,7 +176,7 @@ class EventController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Event created successfully' . ($invitation ? ' and invitation sent.' : '.'),
+                'message' => 'Event created successfully' . ($invitation ? ' and invitation created (ready to send).' : '.'),
                 'data' => $event->load(['invitations']),
                 'invitation' => $invitation
             ], 201);
@@ -227,9 +226,34 @@ class EventController extends Controller
                 // DJs can only view their own events
                 \Log::info('Loading event for DJ', ['event_id' => $event->id, 'dj_id' => $user->id]);
                 $this->authorizeEventAccess($event, $user->id);
+                
+                // Check if event date is in the past and prevent access
+                if ($event->event_date < now()->toDateString()) {
+                    \Log::warning('DJ trying to access past event', [
+                        'event_id' => $event->id,
+                        'event_date' => $event->event_date,
+                        'current_date' => now()->toDateString(),
+                        'dj_id' => $user->id
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This event has already passed and cannot be accessed.',
+                        'is_past_event' => true
+                    ], 403);
+                }
             } elseif ($user->role === 'client') {
-                // Clients can only view events they're invited to
+                // Clients can only view events they're invited to and that are not past
                 \Log::info('Loading event for client', ['event_id' => $event->id, 'client_email' => $user->email]);
+                
+                // Check if event date is in the past
+                if ($event->event_date < now()->toDateString()) {
+                    \Log::warning('Client trying to access past event', [
+                        'event_id' => $event->id,
+                        'event_date' => $event->event_date,
+                        'current_date' => now()->toDateString()
+                    ]);
+                    return response()->json(['message' => 'Event not found or access denied'], 404);
+                }
                 
                 // Use the same logic as invitedEvents relationship
                 $invitation = \App\Models\Invitation::where('event_id', $event->id)
@@ -325,9 +349,8 @@ class EventController extends Controller
                             $invitationMessage = ' and new invitation created for client email';
                         }
 
-                        // Send invitation email
-                        Mail::to($newClientEmail)->send(new EventInvitationMail($invitation));
-                        $invitationMessage .= ' and email sent';
+                        // NOTE: Email sending removed - will be triggered manually via send button
+                        $invitationMessage .= ' (invitation ready to send)';
                     } else {
                         // If email is removed, mark invitation as cancelled
                         if ($invitation) {
@@ -397,7 +420,7 @@ class EventController extends Controller
     }
 
     /**
-     * Get events for a client (only invited events)
+     * Get events for a client (only invited events that are not past)
      */
     public function getClientEvents(Request $request): JsonResponse
     {
@@ -408,9 +431,11 @@ class EventController extends Controller
                 return response()->json(['message' => 'Access denied'], 403);
             }
 
+            // Only show events that are today or in the future
             $events = $user->invitedEvents()
                           ->with(['dj', 'planning', 'musicIdeas', 'timeline'])
-                          ->orderBy('event_date', 'desc')
+                          ->whereDate('event_date', '>=', now()->toDateString())
+                          ->orderBy('event_date', 'asc')
                           ->get();
 
             return response()->json([
@@ -565,6 +590,16 @@ class EventController extends Controller
                 return response()->json(['message' => 'Access denied'], 403);
             }
 
+            // Check if event date is in the past
+            if ($event->event_date < now()->toDateString()) {
+                \Log::warning('Client trying to access past event', [
+                    'event_id' => $event->id,
+                    'event_date' => $event->event_date,
+                    'current_date' => now()->toDateString()
+                ]);
+                return response()->json(['message' => 'Event not found or access denied'], 404);
+            }
+
             // Check all invitations for this event and client first
             $allInvitations = \App\Models\Invitation::where('event_id', $event->id)
                                                   ->where('client_email', $user->email)
@@ -623,6 +658,70 @@ class EventController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch event.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send invitation email for an event.
+     */
+    public function sendInvitation(Request $request, Event $event): JsonResponse
+    {
+        try {
+            $this->authorizeEventAccess($event, $request->user()->id);
+
+            // Check if event has client email
+            if (empty($event->client_email)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Event does not have a client email address.'
+                ], 400);
+            }
+
+            // Find or create invitation
+            $invitation = Invitation::where('event_id', $event->id)
+                ->where('dj_id', $request->user()->id)
+                ->first();
+
+            if (!$invitation) {
+                // Create new invitation
+                $invitation = Invitation::create([
+                    'event_id' => $event->id,
+                    'dj_id' => $request->user()->id,
+                    'client_email' => $event->client_email,
+                    'client_name' => ($event->client_firstname ?? '') . ' ' . ($event->client_lastname ?? ''),
+                    'expires_at' => Carbon::now()->addDays(7),
+                ]);
+            } else {
+                // Update existing invitation
+                $invitation->update([
+                    'client_email' => $event->client_email,
+                    'client_name' => ($event->client_firstname ?? '') . ' ' . ($event->client_lastname ?? ''),
+                    'expires_at' => Carbon::now()->addDays(7), // Reset expiry
+                    'status' => 'pending', // Reset status
+                ]);
+            }
+
+            // Send invitation email
+            Mail::to($event->client_email)->send(new EventInvitationMail($invitation));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation sent successfully.',
+                'invitation' => $invitation->fresh(['event', 'dj'])
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to send invitation email', [
+                'event_id' => $event->id,
+                'client_email' => $event->client_email,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send invitation email.',
                 'error' => $e->getMessage()
             ], 500);
         }

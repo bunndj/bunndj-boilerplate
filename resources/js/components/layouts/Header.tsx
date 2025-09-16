@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useRole, useAuth } from '@/hooks';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { Logo } from '@/components/common';
 
 interface HeaderProps {
   title?: string;
 }
 
 const Header: React.FC<HeaderProps> = () => {
-  const { canViewOwnEvents } = useRole();
+  const { canViewOwnEvents, isAdmin } = useRole();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,7 +45,6 @@ const Header: React.FC<HeaderProps> = () => {
     { path: '/dashboard', label: 'Home' },
     ...(canViewOwnEvents ? [{ path: '/events', label: 'My Events' }] : []),
     { path: '/profile', label: 'My Profile' },
-    { path: '/contact', label: 'Contact' },
   ];
 
   return (
@@ -53,14 +53,11 @@ const Header: React.FC<HeaderProps> = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center animate-slide-in-left">
-            <Link to="/dashboard" className="flex items-center group" onClick={closeMobileMenu}>
-              <img
-                src="/assets/logo.png"
-                alt="Bunn DJ Planning Logo"
-                className="h-8 sm:h-10 w-auto object-contain hover:opacity-80 transition-all duration-300 group-hover:scale-105"
-                style={{ aspectRatio: '160/51' }}
-              />
-            </Link>
+            <Logo 
+              linkTo="/dashboard" 
+              onClick={closeMobileMenu}
+              showHoverEffect={true}
+            />
           </div>
 
           {/* Desktop Navigation */}

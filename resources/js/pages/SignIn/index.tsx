@@ -6,6 +6,7 @@ import { useAuth, useNotification } from '@/hooks';
 import { dashboardRoute } from '@/routes/routeConfig';
 import { loginSchema, type LoginFormData } from '@/schemas';
 import { useEffect } from 'react';
+import { Logo } from '@/components/common';
 
 function SignIn() {
   const { login } = useAuth();
@@ -85,15 +86,14 @@ function SignIn() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-3 sm:mb-4">
-              <img
-                src="/assets/logo.png"
-                alt="Bunn DJ Planning Logo"
-                className="h-10 sm:h-12 w-auto object-contain"
-                style={{ aspectRatio: '160/51' }}
+              <Logo 
+                linkTo={undefined}
+                imageClassName="h-10 sm:h-12"
+                showHoverEffect={false}
               />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">Welcome Back, DJ!</h1>
-            <p className="text-white text-sm sm:text-base">Sign in to manage your wedding events</p>
+            <p className="text-white text-sm sm:text-base">Sign in to manage your events</p>
           </div>
 
           {errors.root && (
@@ -158,12 +158,12 @@ function SignIn() {
           </form>
 
           <div className="mt-4 sm:mt-6 text-center">
-            <p className="text-white text-xs sm:text-sm mb-1">New to DJ Planning Hub?</p>
+            <p className="text-white text-xs sm:text-sm mb-1">New to EventSync?</p>
             <Link
               to="/signup"
               className="text-brand hover:text-brand-dark font-medium text-sm sm:text-base"
             >
-              Create your DJ account
+              Create your account
             </Link>
           </div>
 

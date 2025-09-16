@@ -12,7 +12,6 @@ export interface User {
   home_phone?: string;
   cell_phone?: string;
   work_phone?: string;
-  fax_phone?: string;
   address?: string;
   address_line_2?: string;
   city?: string;

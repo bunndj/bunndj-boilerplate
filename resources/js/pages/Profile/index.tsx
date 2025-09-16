@@ -32,7 +32,6 @@ function Profile() {
         cell_phone: user.cell_phone || '',
         home_phone: user.home_phone || '',
         work_phone: user.work_phone || '',
-        fax_phone: user.fax_phone || '',
         address: user.address || '',
         address_line_2: user.address_line_2 || '',
         city: user.city || '',
@@ -112,7 +111,7 @@ function Profile() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="text-center p-4 bg-brand/10 rounded-lg hover-scale animate-scale-in animation-delay-300 group cursor-pointer">
                 <div className="text-xl sm:text-2xl font-bold text-brand mb-2 group-hover:animate-bounce-subtle">
-                  {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'}
+                  {user?.role ? user.role.toUpperCase() : 'N/A'}
                 </div>
                 <div className="text-gray-600 text-sm sm:text-base group-hover:text-brand transition-colors duration-300">
                   Account Type
@@ -254,16 +253,6 @@ function Profile() {
                   placeholder="Enter work phone number"
                 />
 
-                {/* Fax Phone */}
-                <PhoneInput
-                  name="fax_phone"
-                  register={register}
-                  watch={watch}
-                  setValue={setValue}
-                  error={errors.fax_phone}
-                  label="Fax Phone"
-                  placeholder="Enter fax phone number"
-                />
 
                 {/* Address */}
                 <div className="space-y-2">

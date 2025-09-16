@@ -282,11 +282,11 @@ const PlanningForm: React.FC<PlanningFormProps> = ({ onSave, initialData = {} })
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">
               {tabs.find(tab => tab.id === activeTab)?.label}
             </h2>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600 sm:block hidden">
               Please fill out the information below to help us plan your perfect event.
             </p>
             {/* Mobile Auto-save indicator */}
-            <div className="lg:hidden mt-2 text-xs text-gray-500 flex items-center">
+            <div className="lg:hidden mt-2 text-xs text-gray-500 flex items-center sm:block hidden">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
               Auto-saving
             </div>

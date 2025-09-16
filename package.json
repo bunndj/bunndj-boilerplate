@@ -36,7 +36,7 @@
   },
   "name": "bunn-dj-planner",
   "version": "1.0.0",
-  "description": "Bunn DJ Wedding Planning App",
+  "description": "EventSync - Event Management Platform",
   "main": "vite.config.js",
   "directories": {
     "test": "tests"

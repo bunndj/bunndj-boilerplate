@@ -102,10 +102,14 @@ const InvitationPage: React.FC = () => {
       console.log('✅ [Invitation] Invitation accepted successfully');
       showSuccess('Invitation Accepted!', 'You can now access your event details.');
 
-      // Redirect to client events page
+      // Update the invitation status locally
+      setInvitation(prev => prev ? { ...prev, status: 'accepted' } : null);
+
+      // Refresh the page to update the view with the new status
+      // This ensures the "View Event Details" button is shown
       setTimeout(() => {
-        navigate('/client/events');
-      }, 2000);
+        window.location.reload();
+      }, 1000);
     } catch (err) {
       console.error('❌ [Invitation] Error accepting invitation:', err);
       showError(
@@ -330,7 +334,7 @@ const InvitationPage: React.FC = () => {
 
               {invitation.status === 'accepted' && (
                 <button
-                  onClick={() => navigate('/client/events')}
+                  onClick={() => navigate(`/client/events/${invitation.event.id}`)}
                   className="w-full bg-brand hover:bg-brand-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
                 >
                   View Event Details
@@ -341,18 +345,18 @@ const InvitationPage: React.FC = () => {
             {/* Invitation Details */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Invitation Details</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Invited for:</span>
-                  <span className="font-medium">{invitation.client_name}</span>
+              <div className="space-y-3 text-sm">
+                <div className="flex flex-col gap-1">
+                  <span className="text-gray-600 font-medium">Invited for:</span>
+                  <span className="font-medium text-gray-900 break-words">{invitation.client_name}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Email:</span>
-                  <span className="font-medium">{invitation.client_email}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-gray-600 font-medium">Email:</span>
+                  <span className="font-medium text-gray-900 break-all">{invitation.client_email}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Expires:</span>
-                  <span className="font-medium">
+                <div className="flex flex-col gap-1">
+                  <span className="text-gray-600 font-medium">Expires:</span>
+                  <span className="font-medium text-gray-900">
                     {new Date(invitation.expires_at).toLocaleDateString()}
                   </span>
                 </div>

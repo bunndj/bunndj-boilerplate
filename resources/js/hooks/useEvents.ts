@@ -62,3 +62,17 @@ export const useDeleteEvent = () => {
     },
   });
 };
+
+// Hook for sending event invitation
+export const useSendEventInvitation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (eventId: number) => eventService.sendInvitation(eventId),
+    onSuccess: (_, eventId) => {
+      // Invalidate specific event and events list to refresh invitation data
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(eventId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
+    },
+  });
+};

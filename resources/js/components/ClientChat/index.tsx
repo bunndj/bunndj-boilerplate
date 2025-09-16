@@ -36,6 +36,7 @@ interface ClientChatProps {
   onStartQuestions?: () => void;
   onDocumentProcessed?: (data: any) => void;
   onDocumentProcessingComplete?: (data?: any) => void;
+  onUploadCompleted?: (saveAnswerFn: (answer: string) => Promise<void>) => void;
 }
 
 const ClientChat: React.FC<ClientChatProps> = ({
@@ -44,6 +45,7 @@ const ClientChat: React.FC<ClientChatProps> = ({
   onStartQuestions,
   onDocumentProcessed: _onDocumentProcessed,
   onDocumentProcessingComplete,
+  onUploadCompleted,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -54,6 +56,12 @@ const ClientChat: React.FC<ClientChatProps> = ({
   const [userInput, setUserInput] = useState('');
   const [chatProgress, setChatProgress] = useState<ChatProgress | null>(null);
   const [djCalendarLink, setDjCalendarLink] = useState<string | null>(null);
+  
+  // Loading states for button protection
+  const [isOptionLoading, setIsOptionLoading] = useState(false);
+  const [isTextSubmitLoading, setIsTextSubmitLoading] = useState(false);
+  const isProcessingRef = useRef(false);
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Ref for chat container to enable auto-scrolling
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +76,7 @@ const ClientChat: React.FC<ClientChatProps> = ({
   const addBotMessage = useCallback(
     (text: string, options?: string[]) => {
       setIsTyping(true);
-      setTimeout(() => {
+      const messageTimeout = setTimeout(() => {
         let messageText = text;
 
         // Add calendar link to step 99 messages
@@ -103,8 +111,10 @@ const ClientChat: React.FC<ClientChatProps> = ({
         });
         setIsTyping(false);
         // Scroll to bottom after message is added
-        setTimeout(scrollToBottom, 100);
+        const scrollTimeout = setTimeout(scrollToBottom, 100);
+        timeoutRefs.current.push(scrollTimeout);
       }, 1000);
+      timeoutRefs.current.push(messageTimeout);
     },
     [djCalendarLink, scrollToBottom]
   );
@@ -132,7 +142,8 @@ const ClientChat: React.FC<ClientChatProps> = ({
       return [...prev, newMessage];
     });
     // Scroll to bottom after message is added
-    setTimeout(scrollToBottom, 100);
+    const scrollTimeout = setTimeout(scrollToBottom, 100);
+    timeoutRefs.current.push(scrollTimeout);
   };
 
   const loadChatProgress = useCallback(async () => {
@@ -177,12 +188,36 @@ const ClientChat: React.FC<ClientChatProps> = ({
 
         setMessages(uniqueMessages);
         // Scroll to bottom after loading messages
-        setTimeout(scrollToBottom, 100);
+        const scrollTimeout = setTimeout(() => {
+          if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+          }
+        }, 100);
+        timeoutRefs.current.push(scrollTimeout);
       } else {
         // Initialize with first message if no messages exist
         const firstStepData = data.current_step_data;
         if (firstStepData) {
-          addBotMessage(firstStepData.question, firstStepData.options);
+          // Add first message directly instead of using addBotMessage to avoid dependency loop
+          setIsTyping(true);
+          const messageTimeout = setTimeout(() => {
+            const newMessage: ChatMessage = {
+              id: `bot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              text: firstStepData.question,
+              isBot: true,
+              timestamp: new Date(),
+              options: firstStepData.options,
+            };
+            setMessages([newMessage]);
+            setIsTyping(false);
+            const scrollTimeout = setTimeout(() => {
+              if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+              }
+            }, 100);
+            timeoutRefs.current.push(scrollTimeout);
+          }, 1000);
+          timeoutRefs.current.push(messageTimeout);
         }
       }
     } catch (error) {
@@ -196,16 +231,32 @@ const ClientChat: React.FC<ClientChatProps> = ({
         input_type: 'options',
         next_step: 2,
       });
-      addBotMessage(
-        'Welcome to our planning app! A couple of quick questions to make sure we have the right show',
-        ['OK', 'Hello']
-      );
+      // Add first message directly to avoid dependency loop
+      setIsTyping(true);
+      const messageTimeout = setTimeout(() => {
+        const newMessage: ChatMessage = {
+          id: `bot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          text: 'Welcome to our planning app! A couple of quick questions to make sure we have the right show',
+          isBot: true,
+          timestamp: new Date(),
+          options: ['OK', 'Hello'],
+        };
+        setMessages([newMessage]);
+        setIsTyping(false);
+        const scrollTimeout = setTimeout(() => {
+          if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+          }
+        }, 100);
+        timeoutRefs.current.push(scrollTimeout);
+      }, 1000);
+      timeoutRefs.current.push(messageTimeout);
     } finally {
       setIsLoading(false);
     }
-  }, [eventId, addBotMessage]);
+  }, [eventId]);
 
-  const saveAnswer = async (answer: string) => {
+  const saveAnswer = useCallback(async (answer: string) => {
     try {
       console.log('🔵 [CHAT-SAVE] Saving answer to backend');
       console.log('🔵 [CHAT-SAVE] Answer details:', {
@@ -233,6 +284,11 @@ const ClientChat: React.FC<ClientChatProps> = ({
       setCurrentStep(data.chat_progress.current_step);
       setCurrentStepData(data.next_step_data);
       setIsCompleted(data.is_completed);
+      
+      // Update DJ calendar link if provided in response
+      if (data.dj_calendar_link) {
+        setDjCalendarLink(data.dj_calendar_link);
+      }
 
       console.log('🔵 [CHAT-SAVE] Updated state:', {
         newCurrentStep: data.chat_progress.current_step,
@@ -240,21 +296,69 @@ const ClientChat: React.FC<ClientChatProps> = ({
         hasNextStep: !!data.next_step_data,
       });
 
-      // Add user message
-      addUserMessage(answer);
+      // Add user message directly
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        text: answer,
+        isBot: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => {
+        const exists = prev.some(
+          msg =>
+            msg.id === userMessage.id ||
+            (msg.text === userMessage.text &&
+              msg.isBot === userMessage.isBot &&
+              Math.abs(msg.timestamp.getTime() - userMessage.timestamp.getTime()) < 1000)
+        );
+        if (exists) {
+          return prev;
+        }
+        return [...prev, userMessage];
+      });
+      
+      // Scroll to bottom after user message
+      const userScrollTimeout = setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, 100);
+      timeoutRefs.current.push(userScrollTimeout);
 
       // Add bot response if not completed
       if (!data.is_completed && data.next_step_data) {
         console.log('🔵 [CHAT-SAVE] Adding bot response for next step');
-        // Add bot message immediately without timeout
-        const newMessage: ChatMessage = {
-          id: Date.now().toString(),
-          text: data.next_step_data.question,
-          isBot: true,
-          timestamp: new Date(),
-          options: data.next_step_data.options,
-        };
-        setMessages(prev => [...prev, newMessage]);
+        setIsTyping(true);
+        const botTimeout = setTimeout(() => {
+          let messageText = data.next_step_data.question;
+
+          // Add calendar link logic for step 99 messages
+          if (
+            messageText.includes('This was fun! I think we have all of the info we need') &&
+            djCalendarLink
+          ) {
+            messageText += `<br /> <a href="${djCalendarLink}" target="_blank">${djCalendarLink}</a>`;
+          }
+
+          const botMessage: ChatMessage = {
+            id: `bot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            text: messageText,
+            isBot: true,
+            timestamp: new Date(),
+            options: data.next_step_data.options,
+          };
+          setMessages(prev => [...prev, botMessage]);
+          setIsTyping(false);
+          
+          // Scroll to bottom after bot message
+          const botScrollTimeout = setTimeout(() => {
+            if (chatContainerRef.current) {
+              chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            }
+          }, 100);
+          timeoutRefs.current.push(botScrollTimeout);
+        }, 1000);
+        timeoutRefs.current.push(botTimeout);
       }
 
       // If completed, trigger form filling callback
@@ -262,7 +366,7 @@ const ClientChat: React.FC<ClientChatProps> = ({
         console.log('🟢 [CHAT-SAVE] Chat completed, triggering form filling');
         onDocumentProcessingComplete?.();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('🔴 [CHAT-SAVE] Error saving answer:', error);
       console.error('🔴 [CHAT-SAVE] Error details:', {
         message: error.message,
@@ -270,39 +374,78 @@ const ClientChat: React.FC<ClientChatProps> = ({
         data: error.response?.data,
       });
     }
-  };
+  }, [eventId, currentStep, djCalendarLink]);
 
   const handleOptionClick = async (option: string) => {
-    if (option === 'Upload Timeline') {
-      // Save the answer first to progress the workflow
+    // Protection against multiple clicks
+    if (isOptionLoading || isProcessingRef.current) {
+      console.log('Option click blocked - already processing');
+      return;
+    }
+
+    console.log('Processing option click:', option);
+    isProcessingRef.current = true;
+    setIsOptionLoading(true);
+
+    try {
+      if (option === 'Upload Timeline') {
+        // Open the upload modal WITHOUT saving the answer yet
+        // The answer will be saved only after successful upload and processing
+        onTimelineUpload?.();
+        return;
+      }
+
+      if (option === 'Calendar Link') {
+        // Handle calendar link - you can implement this based on your calendar system
+        window.open('https://calendly.com/your-dj-company', '_blank');
+        return;
+      }
+
+      if (option === 'Done') {
+        // Handle Done button - save answer and fill forms
+        await saveAnswer(option);
+        // The form filling will be triggered by the backend when is_completed is true
+        return;
+      }
+
       await saveAnswer(option);
-      // Then open the upload modal
-      onTimelineUpload?.();
-      return;
+    } catch (error) {
+      console.error('Error processing option click:', error);
+    } finally {
+      const resetTimeout = setTimeout(() => {
+        console.log('Resetting option loading state');
+        isProcessingRef.current = false;
+        setIsOptionLoading(false);
+      }, 500);
+      timeoutRefs.current.push(resetTimeout);
     }
-
-    if (option === 'Calendar Link') {
-      // Handle calendar link - you can implement this based on your calendar system
-      window.open('https://calendly.com/your-dj-company', '_blank');
-      return;
-    }
-
-    if (option === 'Done') {
-      // Handle Done button - save answer and fill forms
-      await saveAnswer(option);
-      // The form filling will be triggered by the backend when is_completed is true
-      return;
-    }
-
-    await saveAnswer(option);
   };
 
   const handleTextSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim()) return;
+    
+    // Protection against multiple submits
+    if (isTextSubmitLoading || isProcessingRef.current) {
+      console.log('Text submit blocked - already processing');
+      return;
+    }
 
-    await saveAnswer(userInput.trim());
-    setUserInput('');
+    console.log('Processing text submit:', userInput.trim());
+    setIsTextSubmitLoading(true);
+
+    try {
+      await saveAnswer(userInput.trim());
+      setUserInput('');
+    } catch (error) {
+      console.error('Error processing text submit:', error);
+    } finally {
+      const resetTimeout = setTimeout(() => {
+        console.log('Resetting text submit loading state');
+        setIsTextSubmitLoading(false);
+      }, 500);
+      timeoutRefs.current.push(resetTimeout);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -315,6 +458,13 @@ const ClientChat: React.FC<ClientChatProps> = ({
       handleTextSubmit(e);
     }
   };
+
+  // Expose saveAnswer function to parent component
+  useEffect(() => {
+    if (onUploadCompleted) {
+      onUploadCompleted(saveAnswer);
+    }
+  }, [onUploadCompleted, saveAnswer]);
 
   const handleFillForms = async () => {
     try {
@@ -342,16 +492,35 @@ const ClientChat: React.FC<ClientChatProps> = ({
 
     if (input_type === 'options' && options) {
       return (
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
           {options.map((option, index) => (
             <button
               key={index}
-              onClick={() => handleOptionClick(option)}
-              className="bg-brand hover:bg-brand-dark text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 animate-glow text-sm"
+              onClick={() => {
+                if (isOptionLoading || isProcessingRef.current) {
+                  return;
+                }
+                handleOptionClick(option);
+              }}
+              disabled={isOptionLoading || isProcessingRef.current}
+              className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base min-h-[44px] break-words ${
+                (isOptionLoading || isProcessingRef.current)
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-brand hover:bg-brand-dark text-white hover:scale-105 animate-glow'
+              }`}
             >
-              {option === 'Upload Timeline' && <Upload className="w-3 h-3 sm:w-4 sm:h-4" />}
-              {option === 'Calendar Link' && <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />}
-              <span>{option}</span>
+              {(isOptionLoading || isProcessingRef.current) ? (
+                <>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  {option === 'Upload Timeline' && <Upload className="w-3 h-3 sm:w-4 sm:h-4" />}
+                  {option === 'Calendar Link' && <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />}
+                  <span>{option}</span>
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -360,15 +529,34 @@ const ClientChat: React.FC<ClientChatProps> = ({
 
     if (input_type === 'upload' && options) {
       return (
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
           {options.map((option, index) => (
             <button
               key={index}
-              onClick={() => handleOptionClick(option)}
-              className="bg-brand hover:bg-brand-dark text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 animate-glow text-sm"
+              onClick={() => {
+                if (isOptionLoading || isProcessingRef.current) {
+                  return;
+                }
+                handleOptionClick(option);
+              }}
+              disabled={isOptionLoading || isProcessingRef.current}
+              className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base min-h-[44px] break-words ${
+                (isOptionLoading || isProcessingRef.current)
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-brand hover:bg-brand-dark text-white hover:scale-105 animate-glow'
+              }`}
             >
-              <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{option}</span>
+              {(isOptionLoading || isProcessingRef.current) ? (
+                <>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>{option}</span>
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -381,11 +569,30 @@ const ClientChat: React.FC<ClientChatProps> = ({
           {options.map((option, index) => (
             <button
               key={index}
-              onClick={() => handleOptionClick(option)}
-              className="bg-brand hover:bg-brand-dark text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 animate-glow text-sm"
+              onClick={() => {
+                if (isOptionLoading || isProcessingRef.current) {
+                  return;
+                }
+                handleOptionClick(option);
+              }}
+              disabled={isOptionLoading || isProcessingRef.current}
+              className={`px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
+                (isOptionLoading || isProcessingRef.current)
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-brand hover:bg-brand-dark text-white hover:scale-105 animate-glow'
+              }`}
             >
-              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{option}</span>
+              {(isOptionLoading || isProcessingRef.current) ? (
+                <>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>{option}</span>
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -394,21 +601,30 @@ const ClientChat: React.FC<ClientChatProps> = ({
 
     // Text input for other types
     return (
-      <form onSubmit={handleTextSubmit} className="flex gap-2">
+      <form onSubmit={handleTextSubmit} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <input
           type={input_type === 'date' ? 'date' : input_type === 'time' ? 'time' : 'text'}
           value={userInput}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           placeholder="Type your answer..."
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent min-h-[44px]"
           autoFocus
         />
         <button
           type="submit"
-          className="bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105"
+          disabled={isTextSubmitLoading || isProcessingRef.current}
+          className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base min-h-[44px] min-w-[44px] ${
+            (isTextSubmitLoading || isProcessingRef.current)
+              ? 'bg-gray-400 cursor-not-allowed text-white'
+              : 'bg-brand hover:bg-brand-dark text-white hover:scale-105'
+          }`}
         >
-          <Send className="w-4 h-4" />
+          {(isTextSubmitLoading || isProcessingRef.current) ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
         </button>
       </form>
     );
@@ -416,12 +632,26 @@ const ClientChat: React.FC<ClientChatProps> = ({
 
   // Initialize chat on mount
   useEffect(() => {
+    if (eventId) {
     loadChatProgress();
-  }, [loadChatProgress]);
+    }
+  }, [eventId]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+      timeoutRefs.current = [];
+    };
+  }, []);
 
   // Scroll to bottom when messages change or typing indicator changes
   useEffect(() => {
+    const timeoutId = setTimeout(() => {
     scrollToBottom();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [messages, isTyping, scrollToBottom]);
 
   if (isLoading) {
@@ -441,7 +671,7 @@ const ClientChat: React.FC<ClientChatProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg flex flex-col h-[500px] sm:h-[600px] hover-lift animate-scale-in animation-delay-200">
+    <div className="bg-white rounded-lg shadow-lg flex flex-col h-[400px] sm:h-[500px] md:h-[600px] hover-lift animate-scale-in animation-delay-200">
       {/* Header */}
       <div className="p-3 sm:p-4 border-b border-gray-200 bg-gradient-to-r from-brand to-brand-dark text-white rounded-t-lg">
         <h3 className="text-lg font-semibold">Wedding Planning Chat</h3>
@@ -455,7 +685,7 @@ const ClientChat: React.FC<ClientChatProps> = ({
             className={`flex ${message.isBot ? 'justify-start' : 'justify-end'} animate-slide-up`}
           >
             <div
-              className={`max-w-[80%] px-3 sm:px-4 py-2 rounded-lg ${
+              className={`max-w-[85%] sm:max-w-[80%] px-2 sm:px-3 md:px-4 py-2 rounded-lg break-words ${
                 message.isBot ? 'bg-gray-100 text-gray-900' : 'bg-brand text-white'
               }`}
             >
