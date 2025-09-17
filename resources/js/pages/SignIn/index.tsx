@@ -86,13 +86,9 @@ function SignIn() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-3 sm:mb-4">
-              <Logo 
-                linkTo={undefined}
-                imageClassName="h-10 sm:h-12"
-                showHoverEffect={false}
-              />
+              <Logo linkTo={undefined} imageClassName="h-10 sm:h-12" showHoverEffect={false} />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">Welcome Back, DJ!</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand mb-2">Welcome!</h1>
             <p className="text-white text-sm sm:text-base">Sign in to manage your events</p>
           </div>
 
