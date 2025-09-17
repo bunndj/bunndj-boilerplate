@@ -15,7 +15,6 @@ import {
   RefreshCw,
   Loader2,
   ArrowRight,
-  Mail,
   CheckCircle,
   XCircle,
   Clock3,
@@ -211,8 +210,8 @@ const Events: React.FC = () => {
                 <div
                   key={event.id}
                   className={`bg-white rounded-lg shadow-lg p-3 sm:p-4 md:p-6 transition-all duration-200 hover-lift animate-scale-in group ${
-                    isPast 
-                      ? 'opacity-60 cursor-not-allowed' 
+                    isPast
+                      ? 'opacity-60 cursor-not-allowed'
                       : 'hover:shadow-xl cursor-pointer transform hover:scale-[1.02]'
                   }`}
                   style={{ animationDelay: `${index * 100}ms` }}
@@ -220,116 +219,107 @@ const Events: React.FC = () => {
                     if (!isPast) {
                       navigate(`/events/${event.id}`);
                     } else {
-                      showError('Event Unavailable', 'This event has already passed and cannot be accessed.');
+                      showError(
+                        'Event Unavailable',
+                        'This event has already passed and cannot be accessed.'
+                      );
                     }
                   }}
                 >
-                <div className="flex justify-between items-start mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-2 leading-tight group-hover:text-brand transition-colors duration-200">
-                    {event.name}
-                  </h3>
-                  <div className="flex flex-col items-end space-y-1">
-                    {isPast && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center space-x-1">
-                        <CalendarX className="w-3 h-3" />
-                        <span>Past Event</span>
+                  <div className="flex justify-between items-start mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-2 leading-tight group-hover:text-brand transition-colors duration-200">
+                      {event.name}
+                    </h3>
+                    <div className="flex flex-col items-end space-y-1">
+                      {isPast && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center space-x-1">
+                          <CalendarX className="w-3 h-3" />
+                          <span>Past Event</span>
+                        </span>
+                      )}
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full capitalize whitespace-nowrap transition-colors duration-200 ${
+                          isPast
+                            ? 'bg-gray-100 text-gray-600'
+                            : 'bg-blue-100 text-blue-800 group-hover:bg-brand group-hover:text-secondary'
+                        }`}
+                      >
+                        {event.service_package}
                       </span>
-                    )}
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize whitespace-nowrap transition-colors duration-200 ${
-                      isPast 
-                        ? 'bg-gray-100 text-gray-600' 
-                        : 'bg-blue-100 text-blue-800 group-hover:bg-brand group-hover:text-secondary'
-                    }`}>
-                      {event.service_package}
-                    </span>
+                      {(() => {
+                        const invitationStatus = getInvitationStatus(event);
+                        if (invitationStatus && !isPast) {
+                          const IconComponent = invitationStatus.icon;
+                          return (
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${invitationStatus.color} flex items-center space-x-1`}
+                            >
+                              <IconComponent className="w-3 h-3" />
+                              <span>{invitationStatus.text}</span>
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{formatDate(event.event_date)}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">
+                        {event.client_firstname} {event.client_lastname}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                      <span>{event.guest_count} guests</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        {new Date(event.start_time).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}{' '}
+                        -{' '}
+                        {new Date(event.end_time).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-brand hover:text-brand-dark font-medium text-sm">
+                        Start Planning
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-brand" />
+                    </div>
                     {(() => {
                       const invitationStatus = getInvitationStatus(event);
-                      if (invitationStatus && !isPast) {
-                        const IconComponent = invitationStatus.icon;
+                      if (invitationStatus && invitationStatus.status === 'expired') {
                         return (
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${invitationStatus.color} flex items-center space-x-1`}
-                          >
-                            <IconComponent className="w-3 h-3" />
-                            <span>{invitationStatus.text}</span>
-                          </span>
+                          <div className="mt-2 text-center">
+                            <button
+                              onClick={e => handleResendInvitation(event, e)}
+                              className="text-xs text-red-600 hover:text-red-800 font-medium bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors duration-200"
+                            >
+                              Resend Invitation
+                            </button>
+                          </div>
                         );
                       }
                       return null;
                     })()}
                   </div>
                 </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">{formatDate(event.event_date)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">
-                      {event.client_firstname} {event.client_lastname}
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
-                    <span>{event.guest_count} guests</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">
-                      {new Date(event.start_time).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                      })}{' '}
-                      -{' '}
-                      {new Date(event.end_time).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true,
-                      })}
-                    </span>
-                  </div>
-                  {(() => {
-                    const invitationStatus = getInvitationStatus(event);
-                    if (invitationStatus && invitationStatus.status === 'pending') {
-                      return (
-                        <div className="flex items-center text-blue-600">
-                          <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-2 flex-shrink-0" />
-                          <span className="text-xs sm:text-sm font-medium">
-                            Invitation sent to {event.client_email}
-                          </span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-brand hover:text-brand-dark font-medium text-sm">
-                      Start Planning
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-brand" />
-                  </div>
-                  {(() => {
-                    const invitationStatus = getInvitationStatus(event);
-                    if (invitationStatus && invitationStatus.status === 'expired') {
-                      return (
-                        <div className="mt-2 text-center">
-                          <button
-                            onClick={e => handleResendInvitation(event, e)}
-                            className="text-xs text-red-600 hover:text-red-800 font-medium bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors duration-200"
-                          >
-                            Resend Invitation
-                          </button>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              </div>
               );
             })}
           </div>
